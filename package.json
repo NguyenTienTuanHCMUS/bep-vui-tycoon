@@ -1,0 +1,13 @@
+{
+  "name": "bep-vui-tycoon",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Game quản lý nhà hàng chạy trên trình duyệt, có đăng nhập & lưu tiến trình trên Vercel",
+  "scripts": {
+    "dev": "node dev-server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

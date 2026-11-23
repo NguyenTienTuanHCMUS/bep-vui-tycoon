@@ -1,0 +1,1772 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bếp Vui Tycoon</title>
+<style>
+  :root{
+    --bg:#1b1d24; --panel:#262a35; --panel2:#2f3442; --text:#f1f1f1; --muted:#a9afbd;
+    --accent:#ffb74d; --good:#66bb6a; --bad:#ef5350; --blue:#4fc3f7;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Roboto,Arial,sans-serif}
+  #app{max-width:1560px;margin:0 auto;padding:10px 12px}
+  .layout{display:grid;grid-template-columns:220px minmax(0,1fr) 240px;gap:10px;align-items:start}
+  .side{background:var(--panel);border-radius:12px;padding:12px;font-size:13px;max-height:calc(100vh - 90px);overflow:auto}
+  .side h3{margin:0 0 8px;font-size:15px;color:var(--accent)}
+  .rc{background:var(--panel2);border-radius:10px;padding:8px 10px;margin-bottom:8px;border:2px solid transparent}
+  .rc.hot{border-color:#ffb300}
+  .rc.locked{opacity:.45}
+  .rc .t{display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px}
+  .rc .t .e{font-size:22px}
+  .rc .t .p{margin-left:auto;color:var(--good)}
+  .rc ol{margin:6px 0 0;padding-left:18px;color:#d6d9e0}
+  .rc li{margin:2px 0}
+  .rc .w{font-size:11px;color:#ffb300;margin-top:4px}
+  .keys div{display:flex;gap:8px;align-items:baseline;margin:6px 0;line-height:1.35}
+  .keys kbd{flex:none}
+  .side ul{padding-left:18px;margin:6px 0;color:#d6d9e0}
+  .side li{margin:4px 0;line-height:1.4}
+  #nowHint{background:#1f3a2a;border:1px solid #2e7d32;border-radius:10px;padding:8px 10px;margin-bottom:10px;min-height:52px}
+  #nowHint b{color:#a5d6a7}
+  @media (max-width:1150px){
+    .layout{grid-template-columns:1fr 1fr}
+    .layout .main{grid-column:1 / -1;order:-1}
+    .side{max-height:none}
+  }
+  @media (max-width:640px){ .layout{grid-template-columns:1fr} }
+  #hud{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+  .stat{background:var(--panel);padding:7px 12px;border-radius:10px;font-weight:600;display:flex;gap:6px;align-items:center;font-size:15px}
+  .bar{width:90px;height:10px;background:#111;border-radius:6px;overflow:hidden}
+  #repFill{height:100%;width:50%;background:linear-gradient(90deg,#ef5350,#ffca28,#66bb6a);transition:width .3s}
+  .spacer{flex:1}
+  button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:8px 14px;background:var(--panel2);color:var(--text);font-weight:600}
+  button:hover:not(:disabled){filter:brightness(1.2)}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  #btnShop{background:var(--accent);color:#3a2300}
+  #btnMp.on{background:#1e3a5f;color:#90caf9}
+  canvas{display:block;width:100%;height:auto;border-radius:12px;background:#000;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+  #savedNote{height:18px;font-size:12px;color:var(--muted);text-align:right;margin-top:4px}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:10;padding:16px}
+  .hidden{display:none!important}
+  .panel{background:var(--panel);border-radius:14px;width:min(560px,100%);max-height:90vh;overflow:auto;padding:18px 20px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+  .ph{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .ph h2{margin:0;flex:1;font-size:20px}
+  .row{display:flex;align-items:center;gap:12px;background:var(--panel2);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+  .row .ic{font-size:28px;width:38px;text-align:center}
+  .row .info{flex:1;display:flex;flex-direction:column}
+  .row small{color:var(--muted)}
+  .row button{min-width:84px;background:var(--good);color:#0d2a10}
+  .row button.owned{background:#555;color:#ddd}
+  .help li{margin:5px 0;line-height:1.45}
+  kbd{background:#444;border-radius:4px;padding:1px 6px;font-family:inherit;border-bottom:2px solid #222}
+  .form label{display:block;margin:10px 0;font-weight:600;font-size:14px}
+  .form input{display:block;width:100%;margin-top:4px;padding:10px 12px;border-radius:8px;border:1px solid #444;background:#1b1d24;color:var(--text);font:inherit}
+  .form input:focus{outline:2px solid var(--accent);border-color:transparent}
+  #mpCode{text-transform:uppercase;letter-spacing:4px;font-weight:800}
+  .btns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .btns button{flex:1}
+  button.primary{background:var(--accent);color:#3a2300}
+  .muted{color:var(--muted);font-size:13px}
+  .small{font-size:12px}
+  .err{color:#ef9a9a;min-height:18px;font-size:13px}
+  #btnUser.on{background:#1f3a2a;color:#a5d6a7}
+  .big{display:block;width:100%;margin-top:12px;padding:12px;background:var(--accent);color:#3a2300;font-size:17px}
+  .roomcode{font-size:40px;font-weight:900;letter-spacing:8px;text-align:center;background:#1b1d24;border-radius:12px;padding:10px;margin:8px 0;color:var(--accent)}
+  .plist{list-style:none;padding:0;margin:8px 0}
+  .plist li{display:flex;align-items:center;gap:8px;background:var(--panel2);border-radius:8px;padding:7px 10px;margin:4px 0}
+  .dot{width:14px;height:14px;border-radius:50%;flex:none}
+  .or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;margin:14px 0 4px}
+  .or::before,.or::after{content:"";flex:1;height:1px;background:#444}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hud">
+    <div class="stat">💰 $<span id="money">0</span></div>
+    <div class="stat" title="Danh tiếng">⭐ <div class="bar"><div id="repFill"></div></div><span id="rep">50</span></div>
+    <div class="stat">🔥 Combo <span id="combo">0</span></div>
+    <div class="stat" title="Khách đã phục vụ">🍽️ <span id="served">0</span></div>
+    <div class="spacer"></div>
+    <button id="btnMp" title="Chơi chung với bạn bè">👥 Chơi chung</button>
+    <button id="btnUser" title="Tài khoản">👤 Đăng nhập</button>
+    <button id="btnShop">🛒 Cửa hàng</button>
+    <button id="btnHelp" title="Hướng dẫn">❓</button>
+    <button id="btnMute" title="Bật/tắt âm thanh">🔊</button>
+    <button id="btnReset" title="Chơi lại từ đầu">↺</button>
+  </div>
+  <div class="layout">
+    <aside class="side" id="recipePanel">
+      <h3>📖 Công thức nấu ăn</h3>
+      <div id="recipeList"></div>
+    </aside>
+    <div class="main">
+      <canvas id="game" width="1080" height="600"></canvas>
+      <div id="savedNote"></div>
+    </div>
+    <aside class="side">
+      <h3>💡 Làm gì tiếp?</h3>
+      <div id="nowHint"></div>
+      <h3>🎮 Phím điều khiển</h3>
+      <div class="keys">
+        <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>Di chuyển (hoặc phím mũi tên)</span></div>
+        <div><kbd>Space</kbd><span>Lấy / đặt đồ, lấy đĩa, giao món</span></div>
+        <div><kbd>E</kbd><span>Giữ để thái trên thớt</span></div>
+        <div><kbd>🖱️</kbd><span>Click khách: ghi món ❗, mang món 🟩, thu tiền 💰</span></div>
+        <div><kbd>Esc</kbd><span>Đóng cửa sổ</span></div>
+      </div>
+      <h3>📋 Cách chơi</h3>
+      <ul>
+        <li>Ô viền <b style="color:#ffeb3b">vàng</b> là chỗ đầu bếp đang nhắm tới, có bảng gợi ý phím ngay cạnh.</li>
+        <li>Lấy nguyên liệu ở thùng → thái trên thớt / nấu trên bếp → lấy đĩa ⚪ → cho nguyên liệu vào đĩa.</li>
+        <li>Mang đĩa hoàn chỉnh tới quầy 🛎️ để giao.</li>
+        <li>Đồ trên bếp nấu xong phải lấy ra ngay, thấy ⚠️ là sắp cháy!</li>
+        <li>Giao đúng phiếu <b style="color:#ffb300">TIẾP</b> để tăng combo 🔥.</li>
+        <li>Khách hết kiên nhẫn sẽ bỏ về và trừ ⭐.</li>
+        <li>Dùng tiền mua bàn, món mới, nhân viên trong 🛒 Cửa hàng.</li>
+        <li>👥 <b>Chơi chung</b>: tạo phòng rồi gửi mã cho bạn bè (tối đa 4 đầu bếp).</li>
+      </ul>
+    </aside>
+  </div>
+</div>
+
+<div id="shop" class="modal hidden">
+  <div class="panel">
+    <div class="ph"><h2>🛒 Cửa hàng</h2><span class="stat">💰 $<b id="shopMoney">0</b></span><button data-close="shop">✕</button></div>
+    <div id="shopNote" class="muted hidden" style="margin-bottom:8px">Bạn đang ở nhà hàng của người khác — chỉ chủ phòng mới mua được đồ.</div>
+    <div id="shopList"></div>
+  </div>
+</div>
+
+<div id="auth" class="modal hidden">
+  <div class="panel form" style="width:min(400px,100%)">
+    <div class="ph"><h2>👤 Tài khoản</h2><button data-close="auth">✕</button></div>
+    <form id="authForm" autocomplete="on">
+      <p class="muted">Đăng nhập để lưu tiến trình lên máy chủ và chơi tiếp trên máy khác.</p>
+      <label>Tên đăng nhập<input id="authUser" name="username" autocomplete="username" maxlength="20" required placeholder="vd: dau_bep_123"></label>
+      <label>Mật khẩu<input id="authPass" name="password" type="password" autocomplete="current-password" minlength="6" maxlength="100" required></label>
+      <div id="authErr" class="err"></div>
+      <div class="btns">
+        <button type="submit" data-act="login" class="primary">Đăng nhập</button>
+        <button type="submit" data-act="register">Tạo tài khoản mới</button>
+      </div>
+      <p class="muted small">Tài khoản mới sẽ nhận luôn tiến trình bạn đang chơi ở chế độ khách.</p>
+    </form>
+    <div id="authInfo" class="hidden">
+      <p>Đang đăng nhập: <b id="authName"></b></p>
+      <p class="muted" id="authSync"></p>
+      <div class="btns">
+        <button id="btnSyncNow" class="primary">☁️ Lưu ngay</button>
+        <button id="btnLogout">Đăng xuất</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="mp" class="modal hidden">
+  <div class="panel form" style="width:min(420px,100%)">
+    <div class="ph"><h2>👥 Chơi chung</h2><button data-close="mp">✕</button></div>
+    <div id="mpSolo">
+      <label>Tên của bạn<input id="mpName" maxlength="16" placeholder="Đầu bếp"></label>
+      <button class="big" id="btnHost" style="margin-top:4px">🏠 Tạo phòng mới</button>
+      <p class="muted small">Bạn bè sẽ vào nấu chung trong nhà hàng của bạn. Tiền kiếm được thuộc về nhà hàng của bạn.</p>
+      <div class="or">hoặc vào phòng của bạn bè</div>
+      <label>Mã phòng<input id="mpCode" maxlength="6" placeholder="ABCDE" autocomplete="off"></label>
+      <button id="btnJoin" class="primary" style="width:100%">🚪 Vào phòng</button>
+      <p class="muted small">Khi ở phòng người khác, tiến trình của bạn được giữ nguyên và quay lại khi rời phòng.</p>
+    </div>
+    <div id="mpRoom" class="hidden">
+      <div class="muted" id="mpRoomTitle"></div>
+      <div class="roomcode" id="mpRoomCode"></div>
+      <div class="btns" style="margin-top:0"><button id="btnCopyCode">📋 Sao chép mã</button></div>
+      <ul class="plist" id="mpPlayers"></ul>
+      <p class="muted small" id="mpRoomNote"></p>
+      <button id="btnLeave" style="width:100%;background:#5d2a2a">🚪 Rời phòng</button>
+    </div>
+    <div id="mpErr" class="err" style="margin-top:8px"></div>
+    <p class="muted small" id="mpTransport"></p>
+  </div>
+</div>
+
+<div id="help" class="modal">
+  <div class="panel help">
+    <div class="ph"><h2>👨‍🍳 Bếp Vui Tycoon</h2></div>
+    <ul>
+      <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / mũi tên: di chuyển đầu bếp.</li>
+      <li><kbd>Space</kbd>: lấy / đặt đồ, lấy nguyên liệu từ thùng, lấy đĩa, giao đĩa ở <b>quầy giao món 🛎️</b>.</li>
+      <li>Giữ <kbd>E</kbd> cạnh <b>thớt</b> để thái nguyên liệu.</li>
+      <li>Đặt nguyên liệu lên <b>bếp</b> để nấu. Nấu xong phải lấy ra ngay, để lâu sẽ <b>cháy</b>!</li>
+      <li>Bày đủ thành phần lên đĩa rồi mang ra quầy giao món.</li>
+      <li><b>Click chuột</b> vào khách ở phòng ăn để <b>ghi món ❗</b>, <b>mang món ra</b> (khi bong bóng xanh) và <b>thu tiền 💰</b>.</li>
+      <li>Giao đúng thứ tự phiếu (phiếu viền vàng) để tăng <b>combo</b> và nhận thêm tiền.</li>
+      <li>Khách chờ lâu sẽ bỏ về và trừ ⭐ danh tiếng. Danh tiếng cao thì khách tới nhiều hơn.</li>
+      <li>Bấm <b>👥 Chơi chung</b> để nấu cùng bạn bè.</li>
+    </ul>
+    <button class="big" id="btnStart">Vào bếp! 🍳</button>
+    <button class="big" id="btnHelpLogin" style="background:var(--panel2);color:var(--text)">👤 Đăng nhập để lưu tiến trình online</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ================== CẤU HÌNH ================== */
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = 1080, H = 600, T = 48, KX = 0, KY = 80;
+const EF = "'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif";
+const SAVE_KEY = 'bepVuiTycoon_v1';
+
+// W tường, C bàn bếp, S bếp nấu, K thớt, D chồng đĩa, X thùng rác, P quầy giao, chữ cái khác = thùng nguyên liệu
+const MAP = [
+  "WLTMFBRCCCW",
+  "S.........C",
+  "S.........C",
+  "C.........P",
+  "C...KCK...P",
+  "S...CCC...P",
+  "S.........C",
+  "C.........C",
+  "WKKCDDCCXCW",
+];
+const ROWS = MAP.length, COLS = MAP[0].length;
+const KW = COLS * T; // 528
+const CRATE_CHAR = { L:'lettuce', T:'tomato', M:'meat', F:'fish', B:'bread', R:'rice' };
+const TYPE_CHAR = { W:'wall', C:'counter', S:'stove', K:'board', D:'plates', X:'trash', P:'pass' };
+
+const ING = {
+  lettuce:{ name:'Xà lách', icon:'🥬', chop:{raw:'chopped'} },
+  tomato: { name:'Cà chua', icon:'🍅', chop:{raw:'chopped'}, cook:{chopped:'cooked'}, cookedIcon:'🥫' },
+  meat:   { name:'Thịt bò', icon:'🥩', cook:{raw:'cooked'}, cookedIcon:'🍖' },
+  fish:   { name:'Cá hồi',  icon:'🐟', chop:{raw:'chopped'} },
+  bread:  { name:'Bánh mì', icon:'🍞' },
+  rice:   { name:'Gạo',     icon:'🌾', cook:{raw:'cooked'}, cookedIcon:'🍚' },
+};
+const RECIPES = [
+  { id:'salad',  name:'Salad',       icon:'🥗', price:14, cost:0,   parts:['lettuce:chopped','tomato:chopped'] },
+  { id:'steak',  name:'Bít tết',     icon:'🍖', price:18, cost:0,   parts:['meat:cooked'] },
+  { id:'soup',   name:'Súp cà chua', icon:'🍲', price:26, cost:150, parts:['tomato:cooked'] },
+  { id:'burger', name:'Hamburger',   icon:'🍔', price:40, cost:350, parts:['bread:raw','meat:cooked','lettuce:chopped'] },
+  { id:'sushi',  name:'Sushi',       icon:'🍣', price:58, cost:700, parts:['fish:chopped','rice:cooked'] },
+];
+const STATE_VI = { raw:'sống', chopped:'thái', cooked:'chín', burnt:'cháy' };
+
+const DOOR = { x:1052, y:578 }, CORR_Y = 562;
+const PASS_POINT = { x:552, y:KY + 4*T + 24 };
+const TABLE_POS = [];
+for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) TABLE_POS.push({ x:690 + c*150, y:160 + r*130 });
+const MAX_TABLES = TABLE_POS.length;
+
+const MAX_CHEFS = 4;
+const CHEF_COLORS = ['#e53935', '#8e24aa', '#43a047', '#fb8c00'];
+const CHEF_SPAWNS = [[5, 2], [3, 2], [7, 2], [5, 6]].map(([c, r]) => ({ x: KX + c*T + 24, y: KY + r*T + 24 }));
+
+const COSTS = {
+  waiter:[250, 600], chef:[400, 750, 1200], decor:[150, 300, 450], stove:200, shoes:120,
+};
+const tableCost = () => Math.round(60 * Math.pow(1.6, S.tables - 2));
+
+/* ================== MẠNG: trạng thái phiên chơi chung ================== */
+// role: 'solo' (chơi một mình) | 'host' (chủ phòng, chạy logic game) | 'guest' (khách, chỉ gửi thao tác & vẽ)
+const NET = {
+  role: 'solo', code: null, tr: null, myId: Math.random().toString(36).slice(2, 10),
+  outbox: [], sendT: 0, posT: 0, lastPosKey: '', lastState: 0, hostName: '', ownSave: null,
+};
+function myName(){
+  let n = '';
+  try { n = localStorage.getItem('bepVui_name') || ''; } catch (e) {}
+  return n || ACC.user || ('Bếp ' + NET.myId.slice(0, 3).toUpperCase());
+}
+
+/* ================== DỮ LIỆU LƯU ================== */
+function defaultSave(){
+  return { money:50, rep:50, tables:2, unlocked:['salad','steak'], waiters:0, chefLv:0,
+           stove:0, shoes:0, decor:0, served:0, bestCombo:0 };
+}
+let S = defaultSave();
+/* ---- Tài khoản: token lưu trên trình duyệt, tiến trình lưu trên máy chủ ---- */
+const ACC = { token: null, user: null, dirty: false, lastSent: '', busy: false };
+try { ACC.token = localStorage.getItem('bepVui_token'); ACC.user = localStorage.getItem('bepVui_user'); } catch (e) {}
+if (!ACC.token || !ACC.user) { ACC.token = null; ACC.user = null; }
+const localKey = () => ACC.user ? SAVE_KEY + ':' + ACC.user : SAVE_KEY;
+
+function readLocal(){
+  try { const d = JSON.parse(localStorage.getItem(localKey())); return d && typeof d === 'object' ? d : null; }
+  catch (e) { return null; }
+}
+function loadGame(){ applySave(readLocal()); }
+function applySave(d){
+  S = Object.assign(defaultSave(), d && typeof d === 'object' && !Array.isArray(d) ? d : {});
+  // làm sạch dữ liệu
+  const num = (v, lo, hi, def) => (typeof v === 'number' && isFinite(v)) ? Math.min(hi, Math.max(lo, v)) : def;
+  S.money = num(S.money, 0, 1e9, 50);
+  S.rep = num(S.rep, 0, 100, 50);
+  S.tables = Math.round(num(S.tables, 2, MAX_TABLES, 2));
+  S.waiters = Math.round(num(S.waiters, 0, 2, 0));
+  S.chefLv = Math.round(num(S.chefLv, 0, 3, 0));
+  S.decor = Math.round(num(S.decor, 0, 3, 0));
+  S.stove = S.stove ? 1 : 0; S.shoes = S.shoes ? 1 : 0;
+  if (!Array.isArray(S.unlocked)) S.unlocked = ['salad','steak'];
+  S.unlocked = RECIPES.filter(r => r.cost === 0 || S.unlocked.includes(r.id)).map(r => r.id);
+  S.served = Math.round(num(S.served, 0, 1e9, 0));
+  S.bestCombo = Math.round(num(S.bestCombo, 0, 1e6, 0));
+  S.savedAt = num(S.savedAt, 0, 1e15, 0);
+}
+let saveFlashT = 0, noteText = '';
+function setNote(t, secs = 2.5){ noteText = t; saveFlashT = secs; }
+function saveGame(){
+  if (NET.role === 'guest') return; // đang ở nhà hàng người khác: không ghi đè tiến trình của mình
+  S.savedAt = Date.now();
+  try { localStorage.setItem(localKey(), JSON.stringify(S)); } catch (e) {}
+  if (ACC.token) ACC.dirty = true; else setNote('💾 Đã lưu trên trình duyệt (chế độ khách)');
+}
+
+async function apiCall(path, opts = {}){
+  const headers = { 'Content-Type': 'application/json' };
+  if (ACC.token) headers.Authorization = 'Bearer ' + ACC.token;
+  let r;
+  try { r = await fetch('/api/' + path, { ...opts, headers }); }
+  catch (e) { const err = new Error('Không kết nối được máy chủ.'); err.status = 0; throw err; }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { const err = new Error(j.error || ('Lỗi ' + r.status)); err.status = r.status; throw err; }
+  return j;
+}
+function sessionExpired(msgText){
+  setAccount(null, null);
+  setNote('⚠️ ' + msgText + ' Tiến trình vẫn được giữ trên máy này.', 6);
+  openModal('auth');
+}
+// so sánh nội dung, bỏ qua mốc thời gian để không gửi lên khi không có gì thay đổi
+const contentKey = () => JSON.stringify({ ...S, savedAt: 0 });
+async function cloudSave(force = false){
+  if (!ACC.token || ACC.busy || NET.role === 'guest') return;
+  const json = contentKey();
+  if (!force && json === ACC.lastSent) { ACC.dirty = false; return; }
+  ACC.busy = true;
+  try {
+    await apiCall('save', { method: 'POST', body: JSON.stringify({ data: S }) });
+    ACC.lastSent = json; ACC.dirty = false;
+    setNote('☁️ Đã lưu lên máy chủ (' + ACC.user + ')');
+    updateAuthUI();
+  } catch (e) {
+    if (e.status === 401) sessionExpired(e.message);
+    else setNote('⚠️ Chưa lưu được online: ' + e.message + ' — sẽ thử lại', 5);
+  } finally { ACC.busy = false; }
+}
+// Khi đóng tab: gửi bản lưu cuối bằng keepalive (fetch vẫn chạy sau khi trang đóng)
+function cloudSaveOnExit(){
+  if (!ACC.token || NET.role === 'guest') return;
+  if (contentKey() === ACC.lastSent) return;
+  try {
+    fetch('/api/save', { method: 'POST', keepalive: true,
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + ACC.token },
+      body: JSON.stringify({ data: S }) });
+  } catch (e) {}
+}
+// mode: 'register' -> đưa tiến trình khách lên tài khoản mới
+//       'login'    -> tài khoản đã có bản lưu thì dùng bản đó
+//       'startup'  -> so bản trên máy với bản trên máy chủ, lấy bản mới hơn
+async function syncFromCloud(mode){
+  let cloud = null;
+  if (mode !== 'register'){
+    const j = await apiCall('save');
+    cloud = j && j.data;
+  }
+  const useCloud = cloud && (mode === 'login' || (Number(cloud.savedAt) || 0) >= (Number(S.savedAt) || 0));
+  if (useCloud){
+    applySave(cloud);
+    resetRuntime(); recipeCache = ''; nowCache = '';
+    try { localStorage.setItem(localKey(), JSON.stringify(S)); } catch (e) {}
+    ACC.lastSent = contentKey();
+    setNote('☁️ Đã tải tiến trình của ' + ACC.user, 3);
+  } else {
+    saveGame(); await cloudSave(true);
+  }
+}
+function setAccount(token, user){
+  ACC.token = token; ACC.user = user; ACC.lastSent = ''; ACC.dirty = false;
+  try {
+    if (token) { localStorage.setItem('bepVui_token', token); localStorage.setItem('bepVui_user', user); }
+    else { localStorage.removeItem('bepVui_token'); localStorage.removeItem('bepVui_user'); }
+  } catch (e) {}
+  updateAuthUI();
+}
+function updateAuthUI(){
+  const b = document.getElementById('btnUser');
+  if (!b) return;
+  b.textContent = ACC.user ? '👤 ' + ACC.user : '👤 Đăng nhập';
+  b.classList.toggle('on', !!ACC.user);
+  document.getElementById('authForm').classList.toggle('hidden', !!ACC.user);
+  document.getElementById('authInfo').classList.toggle('hidden', !ACC.user);
+  document.getElementById('authName').textContent = ACC.user || '';
+  document.getElementById('authSync').textContent = ACC.lastSent ? 'Tiến trình đã được đồng bộ lên máy chủ.' : 'Tiến trình sẽ tự lưu lên máy chủ khoảng 15 giây/lần.';
+}
+
+/* ================== ÂM THANH (Web Audio) ================== */
+let actx = null, muted = false;
+function ensureAudio(){
+  if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { actx = null; } }
+  if (actx && actx.state === 'suspended') actx.resume();
+}
+function tone(f, d, type = 'sine', v = 0.12, f2 = null, delay = 0){
+  if (muted || !actx) return;
+  const t = actx.currentTime + delay;
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t);
+  if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d);
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+  o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + d + 0.03);
+}
+function noise(d, v = 0.1, freq = 2000){
+  if (muted || !actx) return;
+  const len = Math.floor(actx.sampleRate * d), buf = actx.createBuffer(1, len, actx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) data[i] = (Math.random()*2 - 1) * (1 - i/len);
+  const src = actx.createBufferSource(), f = actx.createBiquadFilter(), g = actx.createGain();
+  f.type = 'bandpass'; f.frequency.value = freq; g.gain.value = v;
+  src.buffer = buf; src.connect(f); f.connect(g); g.connect(actx.destination); src.start();
+}
+const SFX = {
+  pick:  () => tone(520, .08, 'square', .05, 720),
+  drop:  () => tone(380, .08, 'square', .05, 250),
+  chop:  () => noise(.05, .25, 3000),
+  ding:  () => { tone(880, .15, 'sine', .14); tone(1320, .25, 'sine', .1, null, .1); },
+  bad:   () => tone(170, .2, 'sawtooth', .07, 110),
+  serve: () => { tone(660, .1, 'triangle', .14); tone(990, .16, 'triangle', .14, null, .08); },
+  cash:  () => { tone(1250, .07, 'square', .07); tone(1700, .22, 'square', .07, null, .07); },
+  angry: () => tone(320, .45, 'sawtooth', .09, 110),
+  burn:  () => noise(.5, .35, 600),
+  warn:  () => tone(1000, .06, 'square', .04),
+  trash: () => { tone(380, .08, 'square', .05, 250); noise(.15, .15, 400); },
+  buy:   () => [523, 659, 784, 1046].forEach((f, i) => tone(f, .12, 'triangle', .12, null, i*.07)),
+  combo: n => tone(600 + Math.min(n, 10)*70, .18, 'triangle', .14, 1200 + Math.min(n, 10)*70),
+  door:  () => tone(700, .12, 'sine', .07, 950),
+  order: () => tone(500, .09, 'triangle', .1, 820),
+  join:  () => { tone(523, .1, 'triangle', .1); tone(784, .15, 'triangle', .1, null, .09); },
+};
+// Phát âm thanh; nếu là chủ phòng thì gửi kèm cho mọi người. only = id đầu bếp duy nhất được nghe.
+function sfx(name, arg, only){
+  if (!only || only === player.id) { const f = SFX[name]; if (f) f(arg); }
+  if (NET.role === 'host') NET.outbox.push({ t:'sfx', n:name, a:arg, o:only || null });
+}
+
+/* ================== TRẠNG THÁI RUNTIME ================== */
+let grid = [], stations = [];
+let player, chefs, customers, tables, waiters, chef, floats, combo, gameTime, spawnT, autosaveT, custSeq = 0;
+
+function buildKitchen(){
+  grid = []; stations = [];
+  for (let r = 0; r < ROWS; r++){
+    grid.push([]);
+    for (let c = 0; c < COLS; c++){
+      const ch = MAP[r][c];
+      if (ch === '.') { grid[r].push(null); continue; }
+      const st = { type: CRATE_CHAR[ch] ? 'crate' : TYPE_CHAR[ch], ing: CRATE_CHAR[ch] || null,
+        r, c, x: KX + c*T, y: KY + r*T, cx: KX + c*T + T/2, cy: KY + r*T + T/2,
+        item: null, prog: 0, burn: 0, warnT: 0, chopT: 0 };
+      grid[r].push(st); stations.push(st);
+    }
+  }
+}
+function mkChef(id, name, color, pos){
+  return { id, name, color, x: pos.x, y: pos.y, fx: 0, fy: 1, hold: null, chopping: false, chopKey: false,
+           walkT: 0, target: null, msgCd: 0, lastSeen: performance.now(), tx: pos.x, ty: pos.y };
+}
+function resetRuntime(){
+  buildKitchen();
+  player = mkChef(NET.myId, myName(), CHEF_COLORS[0], CHEF_SPAWNS[0]);
+  chefs = [player];
+  customers = [];
+  tables = TABLE_POS.map((p, i) => ({ i, x: p.x, y: p.y, seat: { x: p.x - 58, y: p.y }, cust: null, coin: 0, claimed: null }));
+  waiters = []; syncStaff();
+  chef = { job: null, t: 0 };
+  floats = []; combo = 0; gameTime = 0; spawnT = 1.5; autosaveT = 5;
+}
+function syncStaff(){
+  while (waiters.length < S.waiters){
+    const n = waiters.length;
+    waiters.push({ x: 600 + n*30, y: 440, home: { x: 580 + n*36, y: 450 }, task: null, carry: null, walkT: 0 });
+  }
+}
+
+/* ================== TIỆN ÍCH ================== */
+const unlockedRecipes = () => RECIPES.filter(r => S.unlocked.includes(r.id));
+const cookTime = () => S.stove ? 3.2 : 5;
+const burnTime = () => S.stove ? 9 : 6;
+const chefTime = () => [0, 18, 13, 8][S.chefLv];
+const maxPatience = () => 60 * (1 + 0.2*S.decor);
+const playerSpeed = () => S.shoes ? 235 : 180;
+const canChop = it => it.kind === 'ing' && !!(ING[it.ing].chop && ING[it.ing].chop[it.state]);
+const canCook = it => it.kind === 'ing' && !!(ING[it.ing].cook && ING[it.ing].cook[it.state]);
+const mkIng = ing => ({ kind:'ing', ing, state:'raw' });
+const mkPlate = () => ({ kind:'plate', items: [] });
+
+// Chữ bay; nếu là chủ phòng thì gửi cho mọi người. only = id đầu bếp duy nhất được thấy.
+function addFloat(text, x, y, color = '#fff', size = 18, life = 1.3, only = null){
+  if (!only || only === player.id) floats.push({ text, x, y, color, size, life, max: life });
+  if (NET.role === 'host') NET.outbox.push({ t:'fl', text, x: Math.round(x), y: Math.round(y), color, size, life, o: only });
+}
+function msg(text, ch){
+  if (ch.msgCd > 0) return;
+  ch.msgCd = 0.6;
+  addFloat(text, ch.x, ch.y - 34, '#ffe082', 15, 1.4, ch.id);
+}
+function matchRecipe(plate){
+  return unlockedRecipes().find(r => r.parts.length === plate.items.length && r.parts.every(p => plate.items.includes(p))) || null;
+}
+function orderedQueue(){
+  return customers.filter(c => c.status === 'ordered').sort((a, b) => a.orderTime - b.orderTime);
+}
+function moveTo(o, p, dt, speed){
+  const dx = p.x - o.x, dy = p.y - o.y, d = Math.hypot(dx, dy);
+  if (d <= speed*dt || d < 0.5) { o.x = p.x; o.y = p.y; return true; }
+  o.x += dx/d*speed*dt; o.y += dy/d*speed*dt; o.walkT = (o.walkT || 0) + dt;
+  return false;
+}
+
+/* ================== BẾP: VA CHẠM & TƯƠNG TÁC ================== */
+function stationAt(px, py){
+  const c = Math.floor((px - KX)/T), r = Math.floor((py - KY)/T);
+  if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return null;
+  return grid[r][c];
+}
+function isSolid(px, py){
+  const c = Math.floor((px - KX)/T), r = Math.floor((py - KY)/T);
+  if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return true;
+  return grid[r][c] !== null;
+}
+function blocked(x, y){
+  const r = 14;
+  return isSolid(x - r, y - r) || isSolid(x + r, y - r) || isSolid(x - r, y + r) || isSolid(x + r, y + r);
+}
+function findTarget(ch){
+  const st = stationAt(ch.x + ch.fx*38, ch.y + ch.fy*38);
+  if (st && st.type !== 'wall') return st;
+  let best = null, bd = 58;
+  for (const s of stations){
+    if (s.type === 'wall') continue;
+    const d = Math.hypot(s.cx - ch.x, s.cy - ch.y);
+    if (d < bd) { bd = d; best = s; }
+  }
+  return best;
+}
+function movePlayer(dt){
+  let mx = 0, my = 0;
+  if (keys.KeyW || keys.ArrowUp) my -= 1;
+  if (keys.KeyS || keys.ArrowDown) my += 1;
+  if (keys.KeyA || keys.ArrowLeft) mx -= 1;
+  if (keys.KeyD || keys.ArrowRight) mx += 1;
+  if (!mx && !my) return;
+  const len = Math.hypot(mx, my), sp = playerSpeed()*dt;
+  const nx = player.x + mx/len*sp, ny = player.y + my/len*sp;
+  if (!blocked(nx, player.y)) player.x = nx;
+  if (!blocked(player.x, ny)) player.y = ny;
+  if (Math.abs(mx) >= Math.abs(my)) { player.fx = Math.sign(mx); player.fy = 0; }
+  else { player.fx = 0; player.fy = Math.sign(my); }
+  player.walkT += dt;
+}
+
+function tryAdd(plate, ing, ch){
+  if (ing.state === 'burnt') { msg('Đồ cháy rồi, bỏ vào thùng rác!', ch); sfx('bad', null, ch.id); return false; }
+  const key = ing.ing + ':' + ing.state;
+  if (plate.items.includes(key)) { msg('Đĩa đã có món này', ch); sfx('bad', null, ch.id); return false; }
+  const next = [...plate.items, key];
+  const ok = unlockedRecipes().some(r => next.every(k => r.parts.includes(k)));
+  if (!ok) {
+    msg(`${ING[ing.ing].name} (${STATE_VI[ing.state]}) không hợp công thức nào`, ch); sfx('bad', null, ch.id); return false;
+  }
+  plate.items = next; sfx('drop', null, ch.id);
+  const r = matchRecipe(plate);
+  if (r) addFloat(r.icon + ' Hoàn thành!', ch.x, ch.y - 30, '#a5d6a7', 15, 1.3, ch.id);
+  return true;
+}
+
+function clearStation(st){ st.item = null; st.prog = 0; st.burn = 0; }
+
+// Thực hiện thao tác Space của một đầu bếp (chỉ chạy trên máy chủ phòng / chơi một mình)
+function interact(ch){
+  const st = ch.target; if (!st) return;
+  const h = ch.hold;
+  switch (st.type){
+    case 'crate':
+      if (!h) { ch.hold = mkIng(st.ing); sfx('pick', null, ch.id); }
+      else if (h.kind === 'ing' && h.ing === st.ing && h.state === 'raw') { ch.hold = null; sfx('drop', null, ch.id); }
+      else if (h.kind === 'plate') tryAdd(h, mkIng(st.ing), ch);
+      else { msg('Tay đang cầm đồ', ch); sfx('bad', null, ch.id); }
+      break;
+    case 'plates':
+      if (!h) { ch.hold = mkPlate(); sfx('pick', null, ch.id); }
+      else if (h.kind === 'plate' && h.items.length === 0) { ch.hold = null; sfx('drop', null, ch.id); }
+      else { msg('Tay đang cầm đồ', ch); sfx('bad', null, ch.id); }
+      break;
+    case 'trash':
+      if (!h) msg('Không có gì để bỏ', ch);
+      else if (h.kind === 'plate') { h.items = []; sfx('trash', null, ch.id); }
+      else { ch.hold = null; sfx('trash', null, ch.id); }
+      break;
+    case 'pass':
+      if (!h) msg('Mang đĩa thức ăn tới đây để giao', ch);
+      else if (h.kind !== 'plate') { msg('Hãy bày lên đĩa trước!', ch); sfx('bad', null, ch.id); }
+      else deliver(h, ch);
+      break;
+    case 'counter': case 'board': case 'stove':
+      placeOrTake(st, ch);
+      break;
+  }
+}
+
+function placeOrTake(st, ch){
+  const h = ch.hold, it = st.item;
+  if (!h){
+    if (it) { ch.hold = it; clearStation(st); sfx('pick', null, ch.id); }
+    return;
+  }
+  if (!it){
+    if (st.type === 'board' && !canChop(h)) { msg('Thớt chỉ dùng để thái nguyên liệu sống', ch); sfx('bad', null, ch.id); return; }
+    if (st.type === 'stove' && !canCook(h)) {
+      msg(h.kind === 'ing' && h.ing === 'tomato' && h.state === 'raw' ? 'Cà chua cần thái trước khi nấu' : 'Không nấu được thứ này', ch);
+      sfx('bad', null, ch.id); return;
+    }
+    st.item = h; ch.hold = null; st.prog = 0; st.burn = 0; sfx('drop', null, ch.id);
+    return;
+  }
+  if (h.kind === 'plate' && it.kind === 'ing') { if (tryAdd(h, it, ch)) clearStation(st); return; }
+  if (h.kind === 'ing' && it.kind === 'plate') { if (tryAdd(it, h, ch)) ch.hold = null; return; }
+  msg('Chỗ này đã có đồ', ch); sfx('bad', null, ch.id);
+}
+
+function deliver(plate, ch){
+  const r = matchRecipe(plate);
+  if (!r) { msg('Món chưa hoàn chỉnh', ch); sfx('bad', null, ch.id); return; }
+  const queue = orderedQueue();
+  const cand = queue.find(c => c.recipe === r);
+  if (!cand) { msg('Không có khách nào gọi ' + r.name, ch); sfx('bad', null, ch.id); return; }
+  if (cand === queue[0]) combo++; else combo = 0;
+  S.bestCombo = Math.max(S.bestCombo, combo);
+  cand.comboBonus = combo;
+  cand.status = 'food_ready';
+  cand.patience = Math.min(cand.maxP, cand.patience + cand.maxP*0.2);
+  if (chef.job === cand) { chef.job = null; chef.t = 0; }
+  ch.hold = null;
+  sfx('serve');
+  const px = KX + KW - 24, py = KY + 4*T + 24;
+  addFloat('✓ ' + r.icon + ' Bàn ' + (cand.table.i + 1), px - 40, py - 10, '#a5d6a7', 16);
+  if (combo >= 2) { addFloat('COMBO x' + combo + ' 🔥', px - 60, py - 40, '#ffb74d', 22, 1.6); sfx('combo', combo); }
+  else if (combo === 0) addFloat('Sai thứ tự - mất combo', px - 70, py + 20, '#ef9a9a', 13);
+}
+
+/* ================== PHÒNG ĂN ================== */
+function spawnCustomer(){
+  const free = tables.slice(0, S.tables).filter(t => !t.cust && t.coin === 0);
+  const recs = unlockedRecipes();
+  if (!free.length || !recs.length) return;
+  const t = free[Math.floor(Math.random()*free.length)];
+  const mp = maxPatience();
+  const c = {
+    id: ++custSeq, table: t, x: DOOR.x, y: DOOR.y, path: [{ x: t.seat.x, y: CORR_Y }, { x: t.seat.x, y: t.seat.y }],
+    status: 'in', maxP: mp, patience: mp,
+    recipe: recs[Math.floor(Math.random()*recs.length)], orderTime: 0, eatT: 0, comboBonus: 0,
+    claimed: null, hue: Math.floor(Math.random()*360), angry: false, walkT: 0,
+  };
+  t.cust = c; customers.push(c); sfx('door');
+}
+function takeOrder(c){
+  c.status = 'ordered'; c.orderTime = gameTime;
+  c.patience = Math.min(c.maxP, c.patience + c.maxP*0.25);
+  sfx('order');
+  addFloat('📝 ' + c.recipe.icon, c.x, c.y - 50, '#fff', 16);
+}
+function serve(c){
+  c.status = 'eating'; c.eatT = 5; sfx('serve');
+}
+function collect(t){
+  if (t.coin <= 0) return;
+  S.money += t.coin; sfx('cash');
+  addFloat('+$' + t.coin, t.x, t.y - 20, '#ffd54f', 24, 1.5);
+  t.coin = 0; t.claimed = null;
+  saveGame();
+}
+function sendOut(c){
+  c.status = 'out'; c.table.cust = null; c.claimed = null;
+  c.path = [{ x: c.x, y: CORR_Y }, { x: DOOR.x, y: DOOR.y }];
+  if (chef.job === c) { chef.job = null; chef.t = 0; }
+}
+function leaveAngry(c){
+  c.angry = true; sendOut(c);
+  S.rep = Math.max(0, S.rep - 6); combo = 0;
+  addFloat('😡 -6⭐', c.x, c.y - 40, '#ef5350', 20, 1.6);
+  sfx('angry');
+}
+function pay(c){
+  const ratio = Math.max(0, c.patience / c.maxP);
+  const p = c.recipe.price;
+  const bill = Math.round(p * (1 + 0.1*Math.min(c.comboBonus, 8)) + p*0.5*ratio);
+  c.table.coin = bill;
+  S.rep = Math.min(100, S.rep + (ratio > 0.5 ? 2 : 1));
+  S.served++;
+  sendOut(c);
+  addFloat('😋 Ngon!', c.x, c.y - 40, '#fff', 15);
+}
+// Click vào bàn: thu tiền / ghi món / mang món ra
+function handleTableClick(p){
+  const t = hitTable(p);
+  if (!t) return;
+  if (t.coin > 0) { collect(t); return; }
+  const c = t.cust; if (!c) return;
+  if (c.status === 'wait_order') takeOrder(c);
+  else if (c.status === 'food_ready') serve(c);
+}
+
+function updateCustomers(dt){
+  for (const c of customers){
+    switch (c.status){
+      case 'in': {
+        const p = c.path[0];
+        if (moveTo(c, p, dt, 110)) { c.path.shift(); if (!c.path.length) c.status = 'wait_order'; }
+        break;
+      }
+      case 'wait_order': case 'ordered': case 'food_ready':
+        c.patience -= dt;
+        if (c.patience <= 0) leaveAngry(c);
+        break;
+      case 'eating':
+        c.eatT -= dt;
+        if (c.eatT <= 0) pay(c);
+        break;
+      case 'out': {
+        const p = c.path[0];
+        if (p && moveTo(c, p, dt, 120)) c.path.shift();
+        if (!c.path.length) c.gone = true;
+        break;
+      }
+    }
+  }
+  customers = customers.filter(c => !c.gone);
+}
+
+/* ================== NHÂN VIÊN ================== */
+function validTask(t){
+  if (t.type === 'serve') return t.c.status === 'food_ready' && t.c.table.cust === t.c;
+  if (t.type === 'order') return t.c.status === 'wait_order' && t.c.table.cust === t.c;
+  if (t.type === 'collect') return t.table.coin > 0;
+  return false;
+}
+function releaseTask(w){
+  const t = w.task;
+  if (t){ if (t.c && t.c.claimed === w) t.c.claimed = null; if (t.table && t.table.claimed === w) t.table.claimed = null; }
+  w.task = null; w.carry = null;
+}
+function assignTask(w){
+  let c = customers.find(c => c.status === 'food_ready' && !c.claimed);
+  if (c) { w.task = { type:'serve', c, table: null, stage: 0 }; c.claimed = w; return; }
+  c = customers.find(c => c.status === 'wait_order' && !c.claimed);
+  if (c) { w.task = { type:'order', c, table: null, stage: 1 }; c.claimed = w; return; }
+  const t = tables.find(t => t.coin > 0 && !t.claimed);
+  if (t) { w.task = { type:'collect', c: null, table: t, stage: 1 }; t.claimed = w; }
+}
+function updateWaiter(w, dt){
+  if (w.task && !validTask(w.task)) releaseTask(w);
+  if (!w.task) assignTask(w);
+  const t = w.task;
+  if (!t) { moveTo(w, w.home, dt, 120); return; }
+  const tbl = t.c ? t.c.table : t.table;
+  const dest = (t.type === 'serve' && t.stage === 0) ? PASS_POINT : { x: tbl.x + 12, y: tbl.y + 44 };
+  if (moveTo(w, dest, dt, 150)){
+    if (t.type === 'serve' && t.stage === 0) { t.stage = 1; w.carry = t.c.recipe.icon; return; }
+    if (t.type === 'serve') serve(t.c);
+    else if (t.type === 'order') takeOrder(t.c);
+    else collect(t.table);
+    releaseTask(w);
+  }
+}
+function updateChef(dt){
+  if (S.chefLv <= 0) return;
+  if (chef.job && chef.job.status !== 'ordered') { chef.job = null; chef.t = 0; }
+  if (!chef.job){
+    const q = orderedQueue();
+    if (q.length) { chef.job = q[q.length - 1]; chef.t = 0; } // bếp phụ nhận phiếu mới nhất
+  }
+  if (chef.job){
+    chef.t += dt;
+    if (chef.t >= chefTime()){
+      const c = chef.job;
+      c.status = 'food_ready'; c.comboBonus = 0;
+      c.patience = Math.min(c.maxP, c.patience + c.maxP*0.2);
+      addFloat('👨‍🍳 ' + c.recipe.icon + ' xong!', 120, 540, '#90caf9', 15);
+      sfx('ding');
+      chef.job = null; chef.t = 0;
+    }
+  }
+}
+
+/* ================== VÒNG LẶP CẬP NHẬT (chơi một mình / chủ phòng) ================== */
+const keys = {};
+function update(dt){
+  gameTime += dt;
+  movePlayer(dt);
+
+  for (const ch of chefs){
+    ch.msgCd = Math.max(0, ch.msgCd - dt);
+    ch.target = findTarget(ch);
+    // Thái trên thớt (giữ E)
+    const holdingE = ch === player ? !!keys.KeyE : ch.chopKey;
+    const st = ch.target;
+    ch.chopping = false;
+    if (holdingE && st && st.type === 'board' && st.item && canChop(st.item)){
+      ch.chopping = true;
+      st.prog += dt/1.4;
+      st.chopT -= dt;
+      if (st.chopT <= 0) { sfx('chop'); st.chopT = 0.16; }
+      if (st.prog >= 1){
+        const it = st.item;
+        it.state = ING[it.ing].chop[it.state];
+        st.prog = 0; sfx('ding', null, ch.id);
+      }
+    }
+  }
+
+  // Bếp nấu
+  for (const st of stations){
+    if (st.type !== 'stove' || !st.item || st.item.kind !== 'ing') continue;
+    const it = st.item;
+    if (canCook(it)){
+      st.prog += dt/cookTime();
+      if (st.prog >= 1){ it.state = ING[it.ing].cook[it.state]; st.prog = 1; st.burn = 0; sfx('ding'); }
+    } else if (it.state === 'cooked'){
+      st.burn += dt/burnTime();
+      st.warnT -= dt;
+      if (st.burn > 0.5 && st.warnT <= 0){ sfx('warn'); st.warnT = st.burn > 0.8 ? 0.2 : 0.45; }
+      if (st.burn >= 1){
+        it.state = 'burnt'; sfx('burn');
+        addFloat('🔥 Cháy rồi!', st.cx + 40, st.cy, '#ff7043', 16);
+      }
+    }
+  }
+
+  // Khách tới
+  spawnT -= dt;
+  if (spawnT <= 0){
+    spawnCustomer();
+    spawnT = Math.max(3.5, 11 - S.rep*0.07) * (0.7 + Math.random()*0.6);
+  }
+  updateCustomers(dt);
+  for (const w of waiters) updateWaiter(w, dt);
+  updateChef(dt);
+  tickFloats(dt);
+
+  autosaveT -= dt;
+  if (autosaveT <= 0) { saveGame(); autosaveT = 5; }
+}
+function tickFloats(dt){
+  for (const f of floats) { f.life -= dt; f.y -= 32*dt; }
+  floats = floats.filter(f => f.life > 0);
+}
+
+/* ================== CHƠI CHUNG: tầng truyền tin ================== */
+const SUPABASE_CDN = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
+const isLocalHost = () => ['localhost', '127.0.0.1', '[::1]', ''].includes(location.hostname);
+function loadScript(src){
+  return new Promise((res, rej) => {
+    if (window.supabase) return res();
+    const s = document.createElement('script');
+    s.src = src; s.onload = res; s.onerror = () => rej(new Error('Không tải được thư viện kết nối.'));
+    document.head.appendChild(s);
+  });
+}
+// Mỗi transport có: send(msg), onMessage(cb), close(), kind
+function localTransport(code){
+  const bc = new BroadcastChannel('bepvui-' + code);
+  let cb = null;
+  bc.onmessage = e => { if (cb) cb(e.data); };
+  return { kind: 'local', send: m => bc.postMessage(m), onMessage: f => { cb = f; }, close: () => bc.close() };
+}
+async function supabaseTransport(cfg, code){
+  await loadScript(SUPABASE_CDN);
+  const client = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    realtime: { params: { eventsPerSecond: 30 } },
+  });
+  const ch = client.channel('bepvui-' + code, { config: { broadcast: { self: false, ack: false } } });
+  let cb = null;
+  ch.on('broadcast', { event: 'm' }, msg => { if (cb) cb(msg.payload); });
+  await new Promise((res, rej) => {
+    const to = setTimeout(() => rej(new Error('Kết nối máy chủ realtime quá lâu.')), 10000);
+    ch.subscribe(status => {
+      if (status === 'SUBSCRIBED') { clearTimeout(to); res(); }
+      else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') { clearTimeout(to); rej(new Error('Không kết nối được máy chủ realtime (' + status + ').')); }
+    });
+  });
+  return {
+    kind: 'supabase',
+    send: m => ch.send({ type: 'broadcast', event: 'm', payload: m }),
+    onMessage: f => { cb = f; },
+    close: () => { try { client.removeChannel(ch); } catch (e) {} },
+  };
+}
+async function openTransport(code){
+  let cfg = null;
+  try { const r = await fetch('/api/config'); if (r.ok) cfg = await r.json(); } catch (e) {}
+  if (cfg && cfg.supabaseUrl && cfg.supabaseAnonKey) return supabaseTransport(cfg, code);
+  if (isLocalHost() && 'BroadcastChannel' in window) return localTransport(code);
+  throw new Error('Máy chủ chưa cấu hình Supabase nên chưa chơi chung được.');
+}
+function netSend(m){ if (NET.tr) { m.from = NET.myId; try { NET.tr.send(m); } catch (e) {} } }
+
+/* ---------- Chủ phòng ---------- */
+function randomCode(){
+  const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s = ''; for (let i = 0; i < 5; i++) s += A[Math.floor(Math.random()*A.length)];
+  return s;
+}
+async function hostRoom(){
+  const code = randomCode();
+  const tr = await openTransport(code);
+  NET.tr = tr; NET.code = code; NET.role = 'host'; NET.outbox = []; NET.sendT = 0; simLast = performance.now();
+  player.name = myName();
+  tr.onMessage(hostOnMessage);
+  addFloat('🏠 Đã mở phòng ' + code, player.x, player.y - 40, '#90caf9', 16, 2);
+  updateMpUI();
+}
+function hostOnMessage(m){
+  if (!m || !m.from || m.to || NET.role !== 'host') return;
+  let ch = chefs.find(c => c.id === m.from);
+  if (ch) ch.lastSeen = performance.now();
+  switch (m.k){
+    case 'join': {
+      if (!ch){
+        if (chefs.length >= MAX_CHEFS) { netSend({ k:'full', to: m.from }); return; }
+        const used = chefs.map(c => c.color);
+        const idx = CHEF_COLORS.findIndex(c => !used.includes(c));
+        ch = mkChef(m.from, String(m.name || 'Bạn').slice(0, 16), CHEF_COLORS[idx], CHEF_SPAWNS[idx]);
+        chefs.push(ch);
+        addFloat('👋 ' + ch.name + ' vào bếp!', ch.x, ch.y - 40, '#90caf9', 16, 2);
+        sfx('join');
+        updateMpUI();
+      }
+      netSend({ k:'welcome', to: m.from, x: ch.x, y: ch.y, color: ch.color, host: player.name, code: NET.code });
+      break;
+    }
+    case 'pos':
+      if (!ch) return;
+      if (typeof m.x === 'number' && typeof m.y === 'number' && !blocked(m.x, m.y)) { ch.x = m.x; ch.y = m.y; }
+      ch.fx = Math.sign(m.fx) || 0; ch.fy = Math.sign(m.fy) || 0;
+      break;
+    case 'chop':
+      if (ch) ch.chopKey = !!m.down;
+      break;
+    case 'act':
+      if (!ch) return;
+      if (typeof m.x === 'number' && typeof m.y === 'number' && !blocked(m.x, m.y)) { ch.x = m.x; ch.y = m.y; }
+      ch.fx = Math.sign(m.fx) || 0; ch.fy = Math.sign(m.fy) || 0;
+      ch.target = findTarget(ch);
+      interact(ch);
+      break;
+    case 'click':
+      if (ch && typeof m.x === 'number' && typeof m.y === 'number') handleTableClick({ x: m.x, y: m.y });
+      break;
+    case 'bye':
+      if (ch) removeChef(ch, ' đã rời bếp');
+      break;
+  }
+}
+function removeChef(ch, why){
+  chefs = chefs.filter(c => c !== ch);
+  addFloat('👋 ' + ch.name + why, ch.x, ch.y - 40, '#b0bec5', 15, 2);
+  updateMpUI();
+}
+function makeSnapshot(){
+  const r1 = v => Math.round(v*10)/10;
+  return {
+    k: 'state', t: r1(gameTime), S: { ...S }, combo, host: player.name,
+    st: stations.map(s => (s.item || s.prog || s.burn) ? [s.item, Math.round(s.prog*1000)/1000, Math.round(s.burn*1000)/1000] : 0),
+    ch: chefs.map(c => ({ id: c.id, n: c.name, x: Math.round(c.x), y: Math.round(c.y), fx: c.fx, fy: c.fy, h: c.hold, c: c.chopping ? 1 : 0, col: c.color })),
+    cu: customers.map(c => ({ id: c.id, x: Math.round(c.x), y: Math.round(c.y), s: c.status, p: r1(c.patience), m: c.maxP,
+      r: c.recipe.id, tb: c.table.i, hu: c.hue, a: c.angry ? 1 : 0, e: r1(c.eatT), o: c.orderTime })),
+    tb: tables.map(t => t.coin),
+    wa: waiters.map(w => ({ x: Math.round(w.x), y: Math.round(w.y), c: w.carry })),
+    cj: chef.job ? chef.job.id : null, ct: r1(chef.t),
+    ev: NET.outbox.splice(0),
+  };
+}
+
+/* ---------- Khách (người vào phòng) ---------- */
+function joinRoom(code){
+  return new Promise(async (resolve, reject) => {
+    let tr;
+    try { tr = await openTransport(code); } catch (e) { return reject(e); }
+    let done = false, tries = 0, timer = null;
+    const finish = (err) => {
+      if (done) return; done = true; clearInterval(timer);
+      if (err) { tr.close(); reject(err); } else resolve();
+    };
+    NET.tr = tr;
+    tr.onMessage(m => {
+      if (!m) return;
+      if (!done && m.to === NET.myId && m.k === 'full') { NET.tr = null; finish(new Error('Phòng đã đủ ' + MAX_CHEFS + ' đầu bếp.')); return; }
+      if (!done && m.to === NET.myId && m.k === 'welcome') {
+        // Giữ tiến trình của mình lại, chuyển sang nhà hàng của chủ phòng
+        NET.ownSave = S; S = defaultSave();
+        NET.role = 'guest'; NET.code = code; NET.hostName = m.host || '';
+        NET.lastState = performance.now(); NET.lastPosKey = '';
+        resetRuntime();
+        player.x = player.tx = m.x; player.y = player.ty = m.y; player.color = m.color;
+        tr.onMessage(guestOnMessage);
+        finish();
+      }
+    });
+    const ask = () => {
+      if (++tries > 6) { NET.tr = null; finish(new Error('Không tìm thấy phòng ' + code + '. Kiểm tra lại mã và chủ phòng còn mở game.')); return; }
+      netSend({ k:'join', name: myName() });
+    };
+    ask(); timer = setInterval(ask, 1000);
+  });
+}
+function guestOnMessage(m){
+  if (!m || NET.role !== 'guest') return; // đã rời phòng: bỏ qua mọi gói còn tới muộn
+  if (m.k === 'state') { applySnapshot(m); return; }
+  if (m.k === 'end') { leaveRoom('🏠 Chủ phòng đã đóng phòng.'); return; }
+  if (m.k === 'welcome' && m.to === NET.myId) { NET.lastState = performance.now(); }
+}
+function applySnapshot(m){
+  NET.lastState = performance.now();
+  NET.hostName = m.host || NET.hostName;
+  Object.assign(S, m.S);
+  combo = m.combo; gameTime = m.t;
+  stations.forEach((s, i) => {
+    const v = m.st[i];
+    if (v) { s.item = v[0]; s.prog = v[1]; s.burn = v[2]; } else { s.item = null; s.prog = 0; s.burn = 0; }
+  });
+  // Đầu bếp: vị trí của mình do máy mình quyết định, còn lại nội suy tới vị trí nhận được
+  const prev = new Map(chefs.map(c => [c.id, c]));
+  const next = [player];
+  let meIn = false;
+  for (const d of m.ch){
+    if (d.id === NET.myId) { player.hold = d.h; player.chopping = !!d.c; player.color = d.col; meIn = true; continue; }
+    const c = prev.get(d.id) || mkChef(d.id, d.n, d.col, { x: d.x, y: d.y });
+    Object.assign(c, { name: d.n, color: d.col, tx: d.x, ty: d.y, fx: d.fx, fy: d.fy, hold: d.h, chopping: !!d.c });
+    next.push(c);
+  }
+  const before = chefs.length;
+  chefs = next;
+  if (before !== chefs.length) updateMpUI();
+  if (!meIn && performance.now() - NET.joinedAt > 3000) { leaveRoom('⚠️ Bạn đã bị ngắt khỏi phòng.'); return; }
+  // Khách hàng
+  const prevC = new Map(customers.map(c => [c.id, c]));
+  tables.forEach((t, i) => { t.coin = m.tb[i] || 0; t.cust = null; });
+  customers = m.cu.map(d => {
+    const c = prevC.get(d.id) || { id: d.id, x: d.x, y: d.y, walkT: 0 };
+    Object.assign(c, { tx: d.x, ty: d.y, status: d.s, patience: d.p, maxP: d.m, recipe: RECIPES.find(r => r.id === d.r) || RECIPES[0],
+      table: tables[d.tb], hue: d.hu, angry: !!d.a, eatT: d.e, orderTime: d.o });
+    if (c.status !== 'out' && c.table) c.table.cust = c;
+    return c;
+  });
+  // Phục vụ
+  waiters = m.wa.map((d, i) => {
+    const w = waiters[i] || { x: d.x, y: d.y, walkT: 0 };
+    Object.assign(w, { tx: d.x, ty: d.y, carry: d.c });
+    return w;
+  });
+  chef.job = customers.find(c => c.id === m.cj) || null; chef.t = m.ct;
+  // Sự kiện: âm thanh & chữ bay
+  for (const ev of m.ev || []){
+    if (ev.o && ev.o !== NET.myId) continue;
+    if (ev.t === 'sfx') { const f = SFX[ev.n]; if (f) f(ev.a); }
+    else if (ev.t === 'fl') floats.push({ text: ev.text, x: ev.x, y: ev.y, color: ev.color, size: ev.size, life: ev.life, max: ev.life });
+  }
+}
+function lerpTo(o, dt){
+  if (o.tx === undefined) return;
+  const k = Math.min(1, dt*12), dx = o.tx - o.x, dy = o.ty - o.y;
+  if (Math.abs(dx) + Math.abs(dy) > 120) { o.x = o.tx; o.y = o.ty; return; } // nhảy xa thì đặt luôn
+  o.x += dx*k; o.y += dy*k;
+  if (Math.abs(dx) + Math.abs(dy) > 1) o.walkT = (o.walkT || 0) + dt;
+}
+function guestUpdate(dt){
+  if (!modalOpen()) movePlayer(dt);
+  player.target = findTarget(player);
+  for (const c of chefs) if (c !== player) lerpTo(c, dt);
+  for (const c of customers) lerpTo(c, dt);
+  for (const w of waiters) lerpTo(w, dt);
+  tickFloats(dt);
+  // gửi vị trí của mình ~8 lần/giây khi di chuyển, và 1 lần/giây để báo còn kết nối
+  NET.posT -= dt;
+  const key = Math.round(player.x) + ',' + Math.round(player.y) + ',' + player.fx + ',' + player.fy;
+  if ((NET.posT <= 0 && key !== NET.lastPosKey) || NET.posT < -0.9){
+    NET.posT = 0.125; NET.lastPosKey = key;
+    netSend({ k:'pos', x: Math.round(player.x), y: Math.round(player.y), fx: player.fx, fy: player.fy });
+  }
+}
+function leaveRoom(reason){
+  const wasGuest = NET.role === 'guest', wasHost = NET.role === 'host';
+  if (wasGuest) netSend({ k:'bye' });
+  if (wasHost) netSend({ k:'end' });
+  if (NET.tr) {
+    const tr = NET.tr;
+    tr.onMessage(() => {});            // ngừng nhận tin ngay lập tức
+    setTimeout(() => tr.close(), 300); // đợi chút cho tin "bye"/"end" kịp gửi đi
+  }
+  NET.tr = null; NET.role = 'solo'; NET.code = null; NET.outbox = [];
+  if (wasGuest){
+    S = NET.ownSave || S; NET.ownSave = null;
+    resetRuntime(); recipeCache = ''; nowCache = '';
+  } else if (wasHost){
+    chefs = [player];
+  }
+  if (reason) setNote(reason, 5);
+  updateMpUI();
+}
+// Chủ phòng: chạy logic bằng bộ hẹn giờ riêng (không phụ thuộc khung hình),
+// để nhà hàng không bị đứng khi tab bị ẩn (trình duyệt dừng requestAnimationFrame ở tab ẩn).
+let simLast = performance.now();
+setInterval(() => {
+  const now = performance.now();
+  let el = Math.min(1, (now - simLast)/1000); simLast = now;
+  if (NET.role === 'host'){
+    const total = el;
+    while (el > 0) { const d = Math.min(0.05, el); update(d); el -= d; }
+    NET.sendT -= total;
+    if (NET.sendT <= 0){ NET.sendT = 0.1; netSend(makeSnapshot()); }
+    for (const c of chefs) if (c !== player && now - c.lastSeen > 15000) removeChef(c, ' mất kết nối');
+  } else if (NET.role === 'guest'){
+    if (now - NET.lastState > 15000) { leaveRoom('⚠️ Mất kết nối với chủ phòng.'); return; }
+    NET.beatT = (NET.beatT || 0) + el;
+    if (NET.beatT >= 1){ // báo "còn kết nối" kể cả khi tab đang ẩn
+      NET.beatT = 0;
+      netSend({ k:'pos', x: Math.round(player.x), y: Math.round(player.y), fx: player.fx, fy: player.fy });
+    }
+  }
+}, 50);
+
+/* ================== VẼ ================== */
+function emoji(ch, x, y, size){
+  ctx.font = `${Math.round(size)}px ${EF}`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(ch, x, y + size*0.05);
+}
+function text(str, x, y, size = 14, color = '#fff', align = 'center', weight = '600'){
+  ctx.font = `${weight} ${size}px "Segoe UI",Roboto,Arial,sans-serif`;
+  ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.fillStyle = color;
+  ctx.fillText(str, x, y);
+}
+function rrect(x, y, w, h, r, fill, stroke){
+  ctx.beginPath(); ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.stroke(); }
+}
+function circle(x, y, r, fill){ ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fillStyle = fill; ctx.fill(); }
+function progressBar(x, y, w, h, p, color){
+  rrect(x, y, w, h, h/2, 'rgba(0,0,0,.65)');
+  if (p > 0) rrect(x + 1, y + 1, Math.max(h - 2, (w - 2)*Math.min(1, p)), h - 2, (h - 2)/2, color);
+}
+
+function drawIng(it, x, y, s){
+  const d = ING[it.ing];
+  ctx.fillStyle = '#000';
+  if (it.state === 'chopped'){
+    const k = s*0.58;
+    emoji(d.icon, x - k*0.45, y + k*0.28, k); emoji(d.icon, x + k*0.45, y + k*0.28, k); emoji(d.icon, x, y - k*0.32, k);
+  } else if (it.state === 'cooked'){
+    emoji(d.cookedIcon || d.icon, x, y, s);
+  } else if (it.state === 'burnt'){
+    circle(x, y, s*0.46, '#1a1a1a');
+    ctx.globalAlpha = 0.35; emoji(d.cookedIcon || d.icon, x, y, s*0.8); ctx.globalAlpha = 1;
+    emoji('💨', x + s*0.3, y - s*0.3, s*0.5);
+  } else emoji(d.icon, x, y, s);
+}
+function drawPlate(p, x, y, s){
+  ctx.beginPath(); ctx.ellipse(x, y + 2, s*0.62, s*0.52, 0, 0, Math.PI*2);
+  ctx.fillStyle = '#cfd8dc'; ctx.fill();
+  ctx.beginPath(); ctx.ellipse(x, y + 1, s*0.5, s*0.42, 0, 0, Math.PI*2);
+  ctx.fillStyle = '#fafafa'; ctx.fill();
+  const r = matchRecipe(p);
+  if (r) { emoji(r.icon, x, y, s*0.85); return; }
+  const n = p.items.length;
+  p.items.forEach((k, i) => {
+    const [ing, state] = k.split(':');
+    const a = n === 1 ? 0 : (i/n)*Math.PI*2 - Math.PI/2, rad = n === 1 ? 0 : s*0.22;
+    drawIng({ kind:'ing', ing, state }, x + Math.cos(a)*rad, y + Math.sin(a)*rad, s*0.5);
+  });
+}
+function drawItem(it, x, y, s){ if (it.kind === 'plate') drawPlate(it, x, y, s); else drawIng(it, x, y, s); }
+
+function drawTickets(){
+  ctx.fillStyle = '#20232c'; ctx.fillRect(0, 0, W, KY);
+  const q = orderedQueue();
+  if (!q.length) text('Chưa có phiếu gọi món — click khách có dấu ❗ ở phòng ăn để ghi món', W/2, KY/2, 15, '#8b93a7');
+  q.slice(0, 10).forEach((c, i) => {
+    const x = 8 + i*106, y = 8, w = 100, h = 64;
+    rrect(x, y, w, h, 8, '#f5f0e1', i === 0 ? '#ffb300' : null);
+    if (i === 0) { ctx.lineWidth = 3; rrect(x, y, w, h, 8, null, '#ffb300'); ctx.lineWidth = 1; }
+    emoji(c.recipe.icon, x + 22, y + 24, 30);
+    text('Bàn ' + (c.table.i + 1), x + 70, y + 13, 12, '#5d4037');
+    c.recipe.parts.forEach((k, j) => {
+      const [ing, state] = k.split(':');
+      drawIng({ kind:'ing', ing, state }, x + 52 + j*17, y + 34, 15);
+    });
+    const ratio = c.patience / c.maxP;
+    progressBar(x + 6, y + 50, w - 12, 8, ratio, ratio > 0.5 ? '#66bb6a' : ratio > 0.25 ? '#ffca28' : '#ef5350');
+    if (i === 0) { rrect(x + w - 34, y - 4, 32, 14, 6, '#ffb300'); text('TIẾP', x + w - 18, y + 3, 10, '#3a2300', 'center', '800'); }
+    if (chef.job === c) emoji('👨‍🍳', x + 8, y + 8, 16);
+  });
+}
+
+function drawKitchen(){
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++){
+    ctx.fillStyle = (r + c) % 2 ? '#dfe6e9' : '#cfd8dc';
+    ctx.fillRect(KX + c*T, KY + r*T, T, T);
+  }
+  for (const st of stations) drawStation(st);
+  const tg = player.target;
+  if (tg){
+    ctx.lineWidth = 3; ctx.strokeStyle = '#ffeb3b';
+    ctx.strokeRect(tg.x + 2, tg.y + 2, T - 4, T - 4); ctx.lineWidth = 1;
+  }
+}
+function drawCounterBase(st){
+  rrect(st.x + 1, st.y + 1, T - 2, T - 2, 4, '#795548');
+  rrect(st.x + 4, st.y + 4, T - 8, T - 8, 3, '#a1887f');
+}
+function drawStation(st){
+  const { x, y, cx, cy } = st;
+  switch (st.type){
+    case 'wall':
+      ctx.fillStyle = '#37474f'; ctx.fillRect(x, y, T, T);
+      ctx.fillStyle = '#455a64'; ctx.fillRect(x + 2, y + 2, T - 4, T/2 - 3); ctx.fillRect(x + 2, y + T/2 + 1, T - 4, T/2 - 3);
+      break;
+    case 'counter': drawCounterBase(st); break;
+    case 'board':
+      drawCounterBase(st);
+      rrect(x + 7, y + 9, T - 14, T - 18, 5, '#e0b47a', '#8d6e63');
+      break;
+    case 'stove': {
+      rrect(x + 1, y + 1, T - 2, T - 2, 4, '#37474f');
+      const hot = st.item && st.item.kind === 'ing' && (canCook(st.item) || st.item.state === 'cooked');
+      circle(cx, cy, 17, '#212121');
+      circle(cx, cy, 13, hot ? (Math.sin(performance.now()/80) > 0 ? '#ff7043' : '#ff8a65') : '#424242');
+      circle(cx, cy, 8, '#212121');
+      break;
+    }
+    case 'crate':
+      rrect(x + 2, y + 2, T - 4, T - 4, 4, '#8d6e63');
+      ctx.strokeStyle = '#5d4037'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x + 4, y + 16); ctx.lineTo(x + T - 4, y + 16); ctx.moveTo(x + 4, y + 32); ctx.lineTo(x + T - 4, y + 32); ctx.stroke();
+      ctx.lineWidth = 1;
+      emoji(ING[st.ing].icon, cx, cy, 28);
+      break;
+    case 'plates':
+      drawCounterBase(st);
+      for (let i = 0; i < 3; i++){
+        ctx.beginPath(); ctx.ellipse(cx, cy + 6 - i*5, 16, 9, 0, 0, Math.PI*2);
+        ctx.fillStyle = '#fafafa'; ctx.fill(); ctx.strokeStyle = '#b0bec5'; ctx.stroke();
+      }
+      break;
+    case 'trash':
+      drawCounterBase(st); emoji('🗑️', cx, cy, 28); break;
+    case 'pass':
+      rrect(x + 1, y + 1, T - 2, T - 2, 4, '#90a4ae');
+      ctx.fillStyle = '#b0bec5'; ctx.fillRect(x + 6, y + 4, T - 12, T - 8);
+      emoji('🛎️', cx, cy, 24);
+      break;
+  }
+  if (st.item) drawItem(st.item, cx, cy, 30);
+  if (st.type === 'board' && st.item && canChop(st.item) && st.prog > 0) progressBar(x + 4, y + T - 9, T - 8, 7, st.prog, '#4fc3f7');
+  if (st.type === 'stove' && st.item && st.item.kind === 'ing'){
+    if (canCook(st.item)) progressBar(x + 4, y - 2, T - 8, 8, st.prog, '#66bb6a');
+    else if (st.item.state === 'cooked'){
+      progressBar(x + 4, y - 2, T - 8, 8, st.burn, st.burn > 0.6 ? '#ef5350' : '#ffa726');
+      if (st.burn > 0.5 && Math.sin(performance.now()/70) > 0) emoji('⚠️', x + T + 2, y + 8, 18);
+    }
+  }
+}
+
+// o: { x, y, fx, fy, hold, walkT, chopping }
+function drawChef(o, color, label){
+  const { x, y, fx, fy } = o;
+  const bob = Math.sin((o.walkT || 0)*14)*1.5;
+  ctx.beginPath(); ctx.ellipse(x, y + 15, 15, 6, 0, 0, Math.PI*2); ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fill();
+  circle(x, y + bob, 16, color);
+  circle(x, y + bob, 12, '#ffffff');
+  circle(x, y - 3 + bob, 9, '#ffccbc');
+  circle(x - 5, y - 14 + bob, 6, '#fff'); circle(x + 5, y - 14 + bob, 6, '#fff'); circle(x, y - 17 + bob, 7, '#fff');
+  ctx.fillStyle = '#fff'; ctx.fillRect(x - 7, y - 13 + bob, 14, 5);
+  circle(x - 3 + fx*3, y - 3 + fy*2 + bob, 1.6, '#333'); circle(x + 3 + fx*3, y - 3 + fy*2 + bob, 1.6, '#333');
+  if (o.hold) drawItem(o.hold, x + fx*20, y + fy*20 + (fy < 0 ? -4 : 4) + bob, 24);
+  if (o.chopping) emoji('🔪', x + fx*22 + 10, y + fy*22 - 10 + Math.sin(performance.now()/33)*5, 18);
+  if (label){
+    ctx.font = '700 11px "Segoe UI",Roboto,Arial,sans-serif';
+    const w = ctx.measureText(label).width + 10;
+    rrect(x - w/2, y - 38, w, 15, 7, color);
+    text(label, x, y - 30.5, 11, '#fff', 'center', '700');
+  }
+}
+
+function drawDining(){
+  ctx.fillStyle = '#c89f6f'; ctx.fillRect(KW, KY, W - KW, H - KY);
+  ctx.strokeStyle = 'rgba(90,60,30,.25)';
+  for (let y = KY; y < H; y += 24){ ctx.beginPath(); ctx.moveTo(KW, y); ctx.lineTo(W, y); ctx.stroke(); }
+  ctx.fillStyle = '#5d4037'; ctx.fillRect(KW, KY, 6, H - KY);
+  rrect(DOOR.x - 26, H - 14, 52, 14, 3, '#4e342e');
+  text('CỬA', DOOR.x, H - 7, 10, '#ffe0b2', 'center', '800');
+  tables.forEach((t, i) => {
+    const active = i < S.tables;
+    if (!active){
+      ctx.globalAlpha = 0.35; ctx.setLineDash([6, 5]);
+      rrect(t.x - 37, t.y - 26, 74, 52, 8, null, '#3e2723'); ctx.setLineDash([]);
+      emoji('🔒', t.x, t.y, 20); ctx.globalAlpha = 1;
+      return;
+    }
+    rrect(t.seat.x - 14, t.seat.y - 14, 28, 28, 6, '#6d4c41');
+    rrect(t.x - 37, t.y - 26, 74, 52, 8, '#8d5a3b');
+    rrect(t.x - 33, t.y - 22, 66, 44, 6, '#fff3e0');
+    text('' + (i + 1), t.x + 26, t.y - 14, 11, '#a1887f');
+    if (t.coin > 0){
+      const p = 1 + Math.sin(performance.now()/160)*0.08;
+      emoji('💰', t.x, t.y - 4, 24*p);
+      text('$' + t.coin, t.x, t.y + 15, 12, '#2e7d32', 'center', '800');
+    }
+    if (t.cust && t.cust.status === 'eating') emoji(t.cust.recipe.icon, t.x, t.y, 26);
+  });
+}
+
+function drawCustomer(c){
+  const bob = c.status === 'in' || c.status === 'out' ? Math.sin((c.walkT || 0)*14)*2 : 0;
+  ctx.beginPath(); ctx.ellipse(c.x, c.y + 14, 14, 5, 0, 0, Math.PI*2); ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.fill();
+  circle(c.x, c.y + bob, 16, `hsl(${c.hue},55%,55%)`);
+  const ratio = c.patience / c.maxP;
+  let face = '🙂';
+  if (c.status === 'out') face = c.angry ? '😡' : '😋';
+  else if (c.status === 'eating') face = '😋';
+  else if (c.status !== 'in') face = ratio > 0.6 ? '😊' : ratio > 0.35 ? '😐' : ratio > 0.15 ? '😟' : '😠';
+  emoji(face, c.x, c.y + bob, 24);
+
+  if (['wait_order', 'ordered', 'food_ready', 'eating'].includes(c.status)){
+    const bx = c.x, by = c.y - 46;
+    let bg = '#ffffff', icon = c.recipe.icon;
+    if (c.status === 'wait_order') { bg = '#fff59d'; icon = '❗'; }
+    if (c.status === 'food_ready') bg = Math.sin(performance.now()/125) > 0 ? '#a5d6a7' : '#81c784';
+    if (c.status !== 'eating'){
+      rrect(bx - 20, by - 17, 40, 32, 9, bg, 'rgba(0,0,0,.3)');
+      ctx.beginPath(); ctx.moveTo(bx - 5, by + 15); ctx.lineTo(bx, by + 22); ctx.lineTo(bx + 5, by + 15); ctx.fillStyle = bg; ctx.fill();
+      emoji(icon, bx, by - 1, 22);
+      if (c.status === 'food_ready') emoji('👆', bx + 22, by + 10, 14);
+      progressBar(c.x - 20, c.y + 19, 40, 6, ratio, ratio > 0.5 ? '#66bb6a' : ratio > 0.25 ? '#ffca28' : '#ef5350');
+    } else {
+      progressBar(c.x - 20, c.y + 19, 40, 6, 1 - c.eatT/5, '#4fc3f7');
+    }
+  }
+}
+
+const STATION_NAMES = { crate:'Thùng', counter:'Bàn bếp', board:'Thớt — giữ E để thái', stove:'Bếp nấu', plates:'Chồng đĩa', trash:'Thùng rác', pass:'Quầy giao món — Space để giao' };
+function drawBottomPanel(){
+  ctx.fillStyle = '#20232c'; ctx.fillRect(0, KY + ROWS*T, KW, H - KY - ROWS*T);
+  const y0 = KY + ROWS*T;
+  if (S.chefLv > 0){
+    emoji('👨‍🍳', 22, y0 + 24, 26);
+    text('Bếp phụ Lv' + S.chefLv, 42, y0 + 15, 13, '#90caf9', 'left');
+    if (chef.job){
+      emoji(chef.job.recipe.icon, 150, y0 + 22, 20);
+      progressBar(165, y0 + 17, 90, 10, chef.t/chefTime(), '#90caf9');
+    } else text('đang rảnh', 42, y0 + 32, 12, '#8b93a7', 'left');
+  } else {
+    text('👨‍🍳 Chưa có bếp phụ (mua trong Cửa hàng)', 10, y0 + 22, 12, '#8b93a7', 'left');
+  }
+  const tg = player.target;
+  if (tg){
+    let n = STATION_NAMES[tg.type]; if (tg.type === 'crate') n += ' ' + ING[tg.ing].name;
+    text('▶ ' + n, KW - 8, y0 + 22, 13, '#ffeb3b', 'right');
+  }
+  text('WASD: đi · SPACE: lấy/đặt/giao · giữ E: thái · Click khách: ghi món / mang món / thu tiền', KW/2, y0 + 62, 11.5, '#a9afbd');
+}
+
+function render(){
+  ctx.clearRect(0, 0, W, H);
+  drawTickets();
+  drawKitchen();
+  const multi = NET.role !== 'solo';
+  for (const c of chefs) if (c !== player) drawChef(c, c.color, c.name);
+  drawChef(player, player.color, multi ? 'Bạn' : null);
+  drawBottomPanel();
+  drawDining();
+  drawHint();
+  for (const c of customers) drawCustomer(c);
+  for (const w of waiters){
+    drawChef({ x: w.x, y: w.y, fx: 0, fy: 1, hold: null, walkT: w.walkT }, '#1e88e5');
+    if (w.carry) emoji(w.carry, w.x + 16, w.y - 8, 20);
+  }
+  for (const f of floats){
+    ctx.globalAlpha = Math.min(1, f.life/f.max*2);
+    ctx.font = `800 ${f.size}px "Segoe UI",${EF}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.strokeText(f.text, f.x, f.y);
+    ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y); ctx.lineWidth = 1;
+    ctx.globalAlpha = 1;
+  }
+  if (NET.role !== 'solo'){
+    const label = NET.role === 'host' ? `🏠 Phòng ${NET.code} · ${chefs.length} đầu bếp` : `👥 Phòng ${NET.code} của ${NET.hostName}`;
+    ctx.font = '700 12px "Segoe UI",Roboto,Arial,sans-serif';
+    const w = ctx.measureText(label).width + 16;
+    rrect(W - w - 6, KY + 6, w, 22, 8, 'rgba(30,58,95,.92)');
+    text(label, W - w/2 - 6, KY + 17, 12, '#90caf9', 'center', '700');
+  }
+  if (NET.role === 'guest' && performance.now() - NET.lastState > 2500){
+    ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(0, 0, W, H);
+    text('⏳ Đang chờ chủ phòng...', W/2, H/2, 28, '#fff', 'center', '800');
+    text('(chủ phòng cần để tab game mở)', W/2, H/2 + 32, 15, '#ddd');
+  }
+  if (isPaused() && document.getElementById('help').classList.contains('hidden')) {
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(0, 0, W, H); text('⏸ TẠM DỪNG', W/2, H/2, 32, '#fff', 'center', '800');
+  }
+}
+
+/* ================== HUD & CỬA HÀNG ================== */
+const $ = id => document.getElementById(id);
+let hudCache = '';
+function updateHUD(){
+  const key = [Math.floor(S.money), Math.round(S.rep), combo, S.served, saveFlashT > 0, noteText, S.bestCombo].join('|');
+  if (key === hudCache) return;
+  hudCache = key;
+  $('money').textContent = Math.floor(S.money);
+  $('rep').textContent = Math.round(S.rep);
+  $('repFill').style.width = S.rep + '%';
+  $('combo').textContent = combo + (S.bestCombo ? ` (kỷ lục ${S.bestCombo})` : '');
+  $('served').textContent = S.served;
+  $('savedNote').textContent = saveFlashT > 0 ? noteText : '';
+}
+
+/* ---------- Bảng công thức (bên trái) ---------- */
+function partStep(k){
+  const [ing, state] = k.split(':'), d = ING[ing];
+  if (state === 'raw') return `${d.icon} Lấy ${d.name} từ thùng`;
+  if (state === 'chopped') return `${d.icon} ${d.name} → 🔪 thái trên thớt`;
+  if (d.cook && d.cook.chopped) return `${d.icon} ${d.name} → 🔪 thái → 🔥 nấu`;
+  return `${d.icon} ${d.name} → 🔥 nấu trên bếp`;
+}
+let recipeCache = '';
+function renderRecipes(){
+  const counts = {};
+  orderedQueue().forEach(c => counts[c.recipe.id] = (counts[c.recipe.id] || 0) + 1);
+  const key = S.unlocked.join() + '|' + JSON.stringify(counts);
+  if (key === recipeCache) return;
+  recipeCache = key;
+  $('recipeList').innerHTML = RECIPES.map(r => {
+    const owned = S.unlocked.includes(r.id), n = counts[r.id] || 0;
+    return `<div class="rc ${owned ? '' : 'locked'} ${n ? 'hot' : ''}">
+      <div class="t"><span class="e">${r.icon}</span>${r.name}<span class="p">$${r.price}</span></div>
+      <ol>${r.parts.map(p => `<li>${partStep(p)}</li>`).join('')}<li>⚪ Bày lên đĩa → 🛎️ giao</li></ol>
+      ${owned ? (n ? `<div class="w">📝 ${n} phiếu đang chờ</div>` : '') : `<div class="w">🔒 Mở khóa: $${r.cost} trong Cửa hàng</div>`}
+    </div>`;
+  }).join('');
+}
+
+/* ---------- Gợi ý phím theo ngữ cảnh ---------- */
+function hintFor(st){
+  if (!st) return [];
+  const h = player.hold, it = st.item, out = [];
+  const iname = x => x.kind === 'plate' ? 'đĩa' : ING[x.ing].name;
+  switch (st.type){
+    case 'crate':
+      if (!h) out.push(['Space', 'Lấy ' + ING[st.ing].name]);
+      else if (h.kind === 'ing' && h.ing === st.ing && h.state === 'raw') out.push(['Space', 'Trả lại thùng']);
+      else if (h.kind === 'plate') out.push(['Space', 'Cho ' + ING[st.ing].name + ' vào đĩa']);
+      break;
+    case 'plates':
+      if (!h) out.push(['Space', 'Lấy đĩa']);
+      else if (h.kind === 'plate' && !h.items.length) out.push(['Space', 'Trả đĩa']);
+      break;
+    case 'trash':
+      if (h) out.push(['Space', h.kind === 'plate' ? 'Đổ hết đồ trên đĩa' : 'Bỏ ' + iname(h)]);
+      break;
+    case 'pass':
+      if (h && h.kind === 'plate'){
+        const r = matchRecipe(h);
+        out.push(['Space', r ? 'Giao ' + r.icon + ' ' + r.name : 'Đĩa chưa đủ món']);
+      } else out.push(['', 'Mang đĩa thức ăn tới đây']);
+      break;
+    default: // counter, board, stove
+      if (!h){
+        if (it) out.push(['Space', 'Lấy ' + iname(it)]);
+        if (st.type === 'board' && it && canChop(it)) out.push(['E', 'Giữ để thái']);
+      } else if (!it){
+        if (st.type === 'board') out.push(canChop(h) ? ['Space', 'Đặt lên thớt'] : ['', 'Chỉ thái đồ sống']);
+        else if (st.type === 'stove') out.push(canCook(h) ? ['Space', 'Nấu ' + iname(h)] : ['', 'Không nấu được']);
+        else out.push(['Space', 'Đặt ' + iname(h) + ' xuống']);
+      } else if ((h.kind === 'plate' && it.kind === 'ing') || (h.kind === 'ing' && it.kind === 'plate')){
+        out.push(['Space', 'Cho vào đĩa']);
+      } else if (st.type === 'board' && canChop(it)) out.push(['E', 'Giữ để thái']);
+  }
+  return out;
+}
+function drawHint(){
+  const target = player.target;
+  const lines = hintFor(target);
+  if (!lines.length) return;
+  ctx.font = '700 13px "Segoe UI",Roboto,Arial,sans-serif';
+  const rowH = 22, padX = 8;
+  const widths = lines.map(([k, t]) => (k ? ctx.measureText(k).width + 14 + 6 : 0) + ctx.measureText(t).width);
+  const w = Math.max(...widths) + padX*2, h = lines.length*rowH + 8;
+  // đặt bảng gợi ý ở phía đối diện ô đang nhắm để không che đầu bếp lẫn ô đó
+  let x = player.x - w/2, y = target.cy < player.y - 10 ? player.y + 26 : player.y - 34 - h;
+  if (y < KY + 2) y = player.y + 26;
+  if (y + h > KY + ROWS*T) y = player.y - 34 - h;
+  x = Math.max(4, Math.min(KW - w - 4, x));
+  rrect(x, y, w, h, 8, 'rgba(20,22,30,.92)', '#ffeb3b');
+  lines.forEach(([k, t], i) => {
+    let cx = x + padX; const cy = y + 4 + i*rowH + rowH/2;
+    if (k){
+      const kw = ctx.measureText(k).width + 14;
+      rrect(cx, cy - 9, kw, 18, 4, '#ffeb3b');
+      text(k, cx + kw/2, cy, 12, '#222', 'center', '800');
+      cx += kw + 6;
+      ctx.font = '700 13px "Segoe UI",Roboto,Arial,sans-serif';
+    }
+    text(t, cx, cy, 13, k ? '#fff' : '#aaa', 'left', '700');
+  });
+}
+
+/* ---------- Ô "Làm gì tiếp?" (bên phải) ---------- */
+let nowCache = '';
+function renderNowHint(){
+  const L = [];
+  const h = player.hold, noWaiter = S.waiters === 0;
+  const burning = stations.some(s => s.type === 'stove' && s.item && s.item.kind === 'ing' && s.item.state === 'cooked');
+  if (burning) L.push('🔥 <b>Lấy đồ ra khỏi bếp</b> kẻo cháy!');
+  if (h && h.kind === 'plate' && matchRecipe(h)) L.push('🛎️ Mang đĩa ' + matchRecipe(h).icon + ' tới <b>quầy giao món</b> và bấm <kbd>Space</kbd>');
+  if (noWaiter && customers.some(c => c.status === 'food_ready')) L.push('🟩 <b>Click khách</b> có bong bóng xanh để mang món ra');
+  if (noWaiter && customers.some(c => c.status === 'wait_order')) L.push('❗ <b>Click khách</b> có dấu ❗ để ghi món');
+  if (noWaiter && tables.some(t => t.coin > 0)) L.push('💰 <b>Click bàn</b> có túi tiền để thu tiền');
+  const next = orderedQueue()[0];
+  if (next) L.push(`📝 Phiếu TIẾP: ${next.recipe.icon} <b>${next.recipe.name}</b> (bàn ${next.table.i + 1}) — xem công thức bên trái`);
+  if (!L.length) L.push('⏳ Đang chờ khách tới quán...');
+  const html = L.slice(0, 4).map(s => `<div style="margin:3px 0">${s}</div>`).join('');
+  if (html === nowCache) return;
+  nowCache = html; $('nowHint').innerHTML = html;
+}
+
+function shopItems(){
+  const items = [];
+  items.push({ icon:'🪑', name:`Thêm bàn (${S.tables}/${MAX_TABLES})`, desc:'Phục vụ nhiều khách cùng lúc hơn',
+    cost: S.tables >= MAX_TABLES ? null : tableCost(), buy: () => { S.tables++; } });
+  RECIPES.filter(r => r.cost > 0).forEach(r => {
+    const owned = S.unlocked.includes(r.id);
+    const parts = r.parts.map(k => { const [i, s] = k.split(':'); return ING[i].name + (s !== 'raw' ? ' ' + STATE_VI[s] : ''); }).join(' + ');
+    items.push({ icon:r.icon, name:'Mở món ' + r.name + ` ($${r.price})`, desc: parts, cost: owned ? null : r.cost, buy: () => S.unlocked.push(r.id) });
+  });
+  items.push({ icon:'🧑‍💼', name:`Thuê phục vụ (${S.waiters}/2)`, desc:'Tự ghi món, mang món ra và thu tiền',
+    cost: S.waiters >= 2 ? null : COSTS.waiter[S.waiters], buy: () => { S.waiters++; syncStaff(); } });
+  items.push({ icon:'👨‍🍳', name:`Đầu bếp phụ (Lv ${S.chefLv}/3)`, desc:`Tự nấu phiếu mới nhất · ${S.chefLv < 3 ? [18, 13, 8][S.chefLv] + 's/món' : 'tối đa'}`,
+    cost: S.chefLv >= 3 ? null : COSTS.chef[S.chefLv], buy: () => { S.chefLv++; } });
+  items.push({ icon:'🔥', name:'Bếp gas xịn', desc:'Nấu nhanh hơn (5s → 3.2s), lâu cháy hơn',
+    cost: S.stove ? null : COSTS.stove, buy: () => { S.stove = 1; } });
+  items.push({ icon:'👟', name:'Giày chạy bộ', desc:'Đầu bếp di chuyển nhanh hơn 30%',
+    cost: S.shoes ? null : COSTS.shoes, buy: () => { S.shoes = 1; } });
+  items.push({ icon:'🪴', name:`Trang trí quán (Lv ${S.decor}/3)`, desc:'Khách kiên nhẫn hơn 20% mỗi cấp',
+    cost: S.decor >= 3 ? null : COSTS.decor[S.decor], buy: () => { S.decor++; } });
+  return items;
+}
+function renderShop(){
+  const guest = NET.role === 'guest';
+  $('shopMoney').textContent = Math.floor(S.money);
+  $('shopNote').classList.toggle('hidden', !guest);
+  $('shopList').innerHTML = shopItems().map((it, i) => `
+    <div class="row"><div class="ic">${it.icon}</div>
+      <div class="info"><b>${it.name}</b><small>${it.desc}</small></div>
+      ${it.cost == null ? '<button class="owned" disabled>✔ Đã có</button>'
+        : `<button data-i="${i}" ${guest || S.money < it.cost ? 'disabled' : ''}>$${it.cost}</button>`}
+    </div>`).join('');
+}
+$('shopList').addEventListener('click', e => {
+  const b = e.target.closest('button[data-i]'); if (!b || NET.role === 'guest') return;
+  const it = shopItems()[+b.dataset.i];
+  if (!it || it.cost == null || S.money < it.cost) return;
+  S.money -= it.cost; it.buy(); sfx('buy'); saveGame(); cloudSave(); renderShop();
+});
+
+/* ---------- Cửa sổ & nút ---------- */
+const modalOpen = () => ['shop', 'help', 'auth', 'mp'].some(id => !$(id).classList.contains('hidden'));
+// Chỉ dừng game khi chơi một mình (chơi chung thì người khác vẫn đang nấu)
+const isPaused = () => NET.role === 'solo' && modalOpen();
+function openModal(id){ $(id).classList.remove('hidden'); if (id === 'shop') renderShop(); for (const k in keys) keys[k] = false; if (NET.role === 'guest') netSend({ k:'chop', down:false }); }
+function closeModal(id){ $(id).classList.add('hidden'); }
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => closeModal(b.dataset.close)));
+['shop', 'mp', 'auth'].forEach(id => $(id).addEventListener('mousedown', e => { if (e.target.id === id) closeModal(id); }));
+$('btnShop').onclick = () => { ensureAudio(); openModal('shop'); };
+$('btnHelp').onclick = () => openModal('help');
+$('btnStart').onclick = () => { ensureAudio(); closeModal('help'); };
+$('btnMute').onclick = () => { muted = !muted; $('btnMute').textContent = muted ? '🔇' : '🔊'; };
+$('btnReset').onclick = () => {
+  if (NET.role !== 'solo') return;
+  if (!confirm('Xoá toàn bộ tiến trình và chơi lại từ đầu?')) return;
+  try { localStorage.removeItem(localKey()); } catch (e) {}
+  S = defaultSave(); resetRuntime(); recipeCache = ''; saveGame(); cloudSave(true);
+};
+
+/* ---------- Đăng nhập / đăng ký ---------- */
+$('btnUser').onclick = () => { if (NET.role !== 'solo') return; updateAuthUI(); openModal('auth'); if (!ACC.user) $('authUser').focus(); };
+$('btnHelpLogin').onclick = () => { ensureAudio(); closeModal('help'); $('btnUser').onclick(); };
+$('authForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const act = (e.submitter && e.submitter.dataset.act) || 'login';
+  const btns = $('authForm').querySelectorAll('button');
+  $('authErr').textContent = '';
+  btns.forEach(b => b.disabled = true);
+  try {
+    const j = await apiCall(act === 'register' ? 'register' : 'login', {
+      method: 'POST', body: JSON.stringify({ username: $('authUser').value, password: $('authPass').value }),
+    });
+    const guest = S; // tiến trình đang chơi (chế độ khách)
+    setAccount(j.token, j.username);
+    S = guest;
+    await syncFromCloud(act === 'register' ? 'register' : 'login');
+    player.name = myName();
+    $('authPass').value = '';
+    updateAuthUI();
+    closeModal('auth');
+  } catch (err) {
+    if (ACC.token && err.status !== 401) {
+      $('authErr').textContent = 'Đã đăng nhập, nhưng chưa đồng bộ được: ' + err.message;
+    } else {
+      if (ACC.token) setAccount(null, null);
+      $('authErr').textContent = err.message;
+    }
+  } finally { btns.forEach(b => b.disabled = false); }
+});
+$('btnSyncNow').onclick = () => { saveGame(); cloudSave(true); };
+$('btnLogout').onclick = async () => {
+  saveGame(); await cloudSave();
+  setAccount(null, null);
+  loadGame(); resetRuntime(); recipeCache = ''; nowCache = '';
+  setNote('👋 Đã đăng xuất — đang chơi ở chế độ khách', 3);
+  closeModal('auth');
+};
+
+/* ---------- Sảnh chơi chung ---------- */
+function updateMpUI(){
+  const inRoom = NET.role !== 'solo';
+  $('btnMp').textContent = inRoom ? `👥 Phòng ${NET.code} (${chefs.length})` : '👥 Chơi chung';
+  $('btnMp').classList.toggle('on', inRoom);
+  $('btnReset').disabled = inRoom;
+  $('btnUser').disabled = inRoom;
+  $('mpSolo').classList.toggle('hidden', inRoom);
+  $('mpRoom').classList.toggle('hidden', !inRoom);
+  if (inRoom){
+    $('mpRoomTitle').textContent = NET.role === 'host' ? 'Phòng của bạn — gửi mã này cho bạn bè:' : `Bạn đang ở phòng của ${NET.hostName || 'chủ phòng'}:`;
+    $('mpRoomCode').textContent = NET.code;
+    $('mpPlayers').innerHTML = chefs.map(c =>
+      `<li><span class="dot" style="background:${c.color}"></span>${escapeHtml(c.name)}${c === player ? ' <span class="muted">(bạn)</span>' : ''}</li>`).join('');
+    $('mpRoomNote').textContent = NET.role === 'host'
+      ? 'Giữ tab game này mở trong lúc chơi — máy bạn đang chạy nhà hàng cho cả phòng.'
+      : 'Tiền kiếm được thuộc nhà hàng của chủ phòng. Tiến trình của bạn sẽ quay lại khi rời phòng.';
+    $('btnLeave').textContent = NET.role === 'host' ? '🚪 Đóng phòng' : '🚪 Rời phòng';
+  }
+  $('mpTransport').textContent = NET.tr && NET.tr.kind === 'local' ? 'Chế độ thử trên máy: chỉ các tab trên cùng trình duyệt mới vào được phòng.' : '';
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch])); }
+function saveName(){
+  const n = $('mpName').value.trim().slice(0, 16);
+  try { if (n) localStorage.setItem('bepVui_name', n); } catch (e) {}
+  player.name = n || myName();
+}
+$('btnMp').onclick = () => { ensureAudio(); $('mpName').value = myName(); $('mpErr').textContent = ''; updateMpUI(); openModal('mp'); };
+async function mpAction(btn, fn){
+  $('mpErr').textContent = '';
+  const old = btn.textContent; btn.disabled = true; btn.textContent = '⏳ Đang kết nối...';
+  try { await fn(); } catch (e) { $('mpErr').textContent = e.message; }
+  finally { btn.disabled = false; btn.textContent = old; updateMpUI(); }
+}
+$('btnHost').onclick = () => mpAction($('btnHost'), async () => { saveName(); await hostRoom(); });
+$('btnJoin').onclick = () => mpAction($('btnJoin'), async () => {
+  const code = $('mpCode').value.trim().toUpperCase();
+  if (!/^[A-Z0-9]{4,6}$/.test(code)) throw new Error('Mã phòng gồm 5 ký tự, ví dụ: K7XQ2');
+  saveName();
+  NET.joinedAt = performance.now();
+  await joinRoom(code);
+  closeModal('mp');
+  setNote('👥 Đã vào phòng ' + code, 3);
+});
+$('mpCode').addEventListener('keydown', e => { if (e.key === 'Enter') $('btnJoin').click(); });
+$('btnLeave').onclick = () => { leaveRoom(NET.role === 'host' ? '🏠 Đã đóng phòng.' : '🚪 Đã rời phòng.'); };
+$('btnCopyCode').onclick = async () => {
+  try { await navigator.clipboard.writeText(NET.code); $('btnCopyCode').textContent = '✔ Đã sao chép'; }
+  catch (e) { $('btnCopyCode').textContent = 'Mã: ' + NET.code; }
+  setTimeout(() => { $('btnCopyCode').textContent = '📋 Sao chép mã'; }, 1500);
+};
+
+/* ================== INPUT ================== */
+const GAME_KEYS = ['KeyW','KeyA','KeyS','KeyD','KeyE','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
+addEventListener('keydown', e => {
+  if (e.code === 'Escape') { ['shop', 'help', 'auth', 'mp'].forEach(closeModal); return; }
+  if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return; // đang gõ chữ
+  if (!GAME_KEYS.includes(e.code)) return;
+  e.preventDefault();
+  if (modalOpen()) return;
+  ensureAudio();
+  if (e.code === 'Space' && !e.repeat){
+    if (NET.role === 'guest'){
+      netSend({ k:'act', x: Math.round(player.x), y: Math.round(player.y), fx: player.fx, fy: player.fy });
+    } else { player.target = findTarget(player); interact(player); }
+  }
+  if (e.code === 'KeyE' && !keys.KeyE && NET.role === 'guest') netSend({ k:'chop', down:true });
+  keys[e.code] = true;
+});
+addEventListener('keyup', e => {
+  if (e.code === 'KeyE' && keys.KeyE && NET.role === 'guest') netSend({ k:'chop', down:false });
+  keys[e.code] = false;
+});
+addEventListener('blur', () => {
+  if (keys.KeyE && NET.role === 'guest') netSend({ k:'chop', down:false });
+  for (const k in keys) keys[k] = false;
+});
+
+function toCanvas(e){
+  const r = canvas.getBoundingClientRect();
+  return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height };
+}
+function hitTable(p){
+  return tables.slice(0, S.tables).find(t => p.x > t.x - 95 && p.x < t.x + 45 && p.y > t.y - 75 && p.y < t.y + 35) || null;
+}
+function tableActionable(t){
+  return t && (t.coin > 0 || (t.cust && (t.cust.status === 'wait_order' || t.cust.status === 'food_ready')));
+}
+canvas.addEventListener('mousedown', e => {
+  ensureAudio();
+  if (isPaused()) return;
+  const p = toCanvas(e);
+  if (NET.role === 'guest') { if (hitTable(p)) netSend({ k:'click', x: Math.round(p.x), y: Math.round(p.y) }); }
+  else handleTableClick(p);
+});
+canvas.addEventListener('mousemove', e => {
+  canvas.style.cursor = tableActionable(hitTable(toCanvas(e))) ? 'pointer' : 'default';
+});
+document.addEventListener('visibilitychange', () => { if (document.hidden) { saveGame(); cloudSaveOnExit(); } });
+addEventListener('pagehide', () => {
+  if (NET.role === 'guest') netSend({ k:'bye' });
+  if (NET.role === 'host') netSend({ k:'end' });
+  saveGame(); cloudSaveOnExit();
+});
+setInterval(() => { if (ACC.token && ACC.dirty) cloudSave(); }, 15000);
+
+/* ================== KHỞI ĐỘNG ================== */
+loadGame();
+resetRuntime();
+updateAuthUI();
+updateMpUI();
+if (ACC.token){
+  syncFromCloud('startup').catch(e => {
+    if (e.status === 401) sessionExpired(e.message);
+    else setNote('⚠️ Chưa tải được tiến trình online: ' + e.message, 5);
+  });
+}
+let last = performance.now();
+function loop(now){
+  const dt = Math.min(0.05, (now - last)/1000); last = now;
+  saveFlashT = Math.max(0, saveFlashT - dt);
+  if (NET.role === 'guest') guestUpdate(dt);
+  else if (NET.role === 'solo' && !isPaused()) update(dt); // chủ phòng được cập nhật bằng setInterval ở trên
+  render(); updateHUD(); renderRecipes(); renderNowHint();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
